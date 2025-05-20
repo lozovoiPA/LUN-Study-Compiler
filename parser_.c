@@ -43,6 +43,9 @@ char* write_to;
 
 struct Queue* ops = NULL; // ОПС в виде очереди
 int open_table_type = 0; // Тип объявляемых переменных (см. else в use_action())
+struct Stack* labels_ops = NULL; // стек меток
+struct Stack* labels_test_ops = NULL; // стек меток для тестовой ОПС (выводится в консоль в виде строки)
+int ops_els = 0; // Число элементов ОПС
 
 void parser(char* str, int str_len){
     parser_init();
@@ -61,22 +64,29 @@ void parser(char* str, int str_len){
         }
     }
     if(err_no){
-        printf("\nERR %d at line %d, char %d\n", err_no, line_no, char_no);
+        printf("\nERR %d at line %d: ", err_no, line_no);
+        err_codes_resolver();
+    } else{
+        printf("\n\n%s", test_ops);
     }
-    VariableTable_print();
+    //VariableTable_print();
     parser_dispose();
 }
 
-// Функция, применяющая правила (рекурсивно, пока не будет удалена лексема или не установлена ошибка)
-// Она же проверяет на ошибки.
-int use_rule(int lx_no){
-    // Выводы для тестов
+void use_rule_print(int lx_no){
     printf("%s\t", tk_no_resolver(lx_no));
     print_rule_bk(magazine->top);
     printf("  |  ");
     print_variables();
     printf("\n\t");
     print_action_bk(act_magazine->top);
+    //printf("\n");
+}
+// Функция, применяющая правила (рекурсивно, пока не будет удалена лексема или не установлена ошибка)
+// Она же проверяет на ошибки.
+int use_rule(int lx_no){
+    // Выводы для тестов
+    use_rule_print(lx_no);
 
     // Берем символ из магазина
     struct TypedData tdata = Pop(magazine);
@@ -94,9 +104,11 @@ int use_rule(int lx_no){
     free(act_tdata.data);
 
     printf("  |  %s", test_ops);
-    printf("\n");
+    printf("\n\n");
     if(tdata.type == 0){ // Лексема
         if(dt != lx_no){
+            err_no = ERR_LEXEME_EXPECTED;
+            _error_lexeme = dt;
             err_throw();
             return 0;
         }
@@ -166,6 +178,13 @@ int use_action(struct TypedData tdata){
             return 0;
         }
         write_to += sprintf(write_to, "%s ", v->name) * sizeof(char);
+
+        struct TypedData td;
+        td.data = v->address;
+        td.type = v->type;
+        QueuePush(ops, td);
+
+        ops_els++;
         return 1;
     }
     else if(tdata.type == 2){
@@ -177,15 +196,35 @@ int use_action(struct TypedData tdata){
             return 0;
         }
         if(vt->type == 5){ // real
-            write_to += sprintf(write_to, "%g ", x) * sizeof(char);
+            write_to += sprintf(write_to, "%g ", *(double*)vt->address) * sizeof(char);
+
+            struct TypedData td;
+            td.data = malloc(sizeof(double));
+            *(double*)td.data = *(double*)vt->address;
+            td.type = vt->type;
+            QueuePush(ops, td);
         }
         else{ // int
-            write_to += sprintf(write_to, "%d ", n) * sizeof(char);
+            write_to += sprintf(write_to, "%d ", *(int*)vt->address) * sizeof(char);
+
+            struct TypedData td;
+            td.data = malloc(sizeof(int));
+            *(int*)td.data = *(int*)vt->address;
+            td.type = vt->type;
+            QueuePush(ops, td);
         }
+        ops_els++;
         return 1;
     }
     else if(tdata.type == 3){
         write_to += sprintf(write_to, "%s ", oper_no_resolver(*(int*)tdata.data)) * sizeof(char);
+
+        struct TypedData td;
+        td.data = malloc(sizeof(int));
+        *(int*)td.data = *(int*)tdata.data;
+        td.type = 0;
+        QueuePush(ops, td);
+        ops_els++;
         return 1;
     }
     else{ // Действие - семантическая подпрограмма
@@ -197,37 +236,183 @@ int use_action(struct TypedData tdata){
             case 2: // Встретилось real[*], объявляем динамические массивы
                 open_table_type = 2;
             break;
-            case 3: // Встретилось real (без квадратных скобок), объявляем real
-                open_table_type = 3;
+            case 3: // Встретилось real (без квадратных скобок), объявляем real (если не объявляем массивы)
+                if(open_table_type == 0){
+                    open_table_type = 3;
+                }
             break;
             case 4: // Внести идентификатор в таблицу, выделить память под переменную
                 {
                     struct TypedData tdata = Pop(variables);
-                    struct Variable* v = (struct Variable*)tdata.data; // Получаем идентификатор из стека
-                    if(v->type != 0){
-                        err_no = ERR_IN_VARIABLES_STACK;
-                        err_throw();
+                    struct Variable* v = (struct Variable*)tdata.data; // Получаем значение из стека
+                    switch(open_table_type){ // выделение памяти
+                        case 1: // выделение памяти для статического массива. v - идентификатор массива
+                            {
+                                if(v->type != 0){
+                                    err_no = ERR_IN_VARIABLES_STACK;
+                                    err_throw();
+                                    free(v->address);
+                                    return 0;
+                                }
+                                struct TypedData td = Pop(variables);
+                                struct Variable *vt = (struct Variable*)td.data; // vt - размер массива (очередное значение из стека)
+                                if(vt->type != 6){ // если vt не const int
+                                    err_no = ERR_INDEX_NOT_INTEGER;
+                                    err_throw();
+                                    free(v->address);
+                                    return 0;
+                                }
+                                int size = *(int*)vt->address;
+
+                                v->address = malloc(sizeof(int) * 3); // 0 - ссылка на первый элемент, 1 - размер элемента в байтах, 2 - число элементов
+                                (((int*)v->address)[0]) = (int)malloc(sizeof(double) * size);
+                                (((int*)v->address)[1]) = sizeof(double);
+                                (((int*)v->address)[2]) = size;
+                                Push(variables, td);
+                            }
+                        break;
+                        case 2: // выделение памяти для паспорта динамического массива. v - идентификатор массива
+                            {
+                                if(v->type != 0){
+                                    err_no = ERR_IN_VARIABLES_STACK;
+                                    err_throw();
+                                    return 0;
+                                }
+                                v->address = malloc(sizeof(int) * 3);
+                                (((int*)v->address)[0]) = (int)NULL;
+                            }
+                        break;
+                        case 3:
+                            if(v->type != 0){
+                                err_no = ERR_IN_VARIABLES_STACK;
+                                err_throw();
+                                free(v->address);
+                                return 0;
+                            }
+                            v->address = malloc(sizeof(double));
+                        break;
+                    }
+                    if (!VariableTable_add(v->name, v->address, open_table_type)){
+                        free(v->address);
+                        free(tdata.data);
                         return 0;
                     }
-                    else{
-                        switch(open_table_type){ // выделение памяти
-                            case 1:
-
-                            break;
-                            case 2:
-
-                            break;
-                            case 3:
-                                v->address = malloc(sizeof(double));
-                            break;
-                        }
-                        if (!VariableTable_add(v->name, v->address, open_table_type)){
-                            free(v->address);
-                            free(tdata.data);
-                            return 0;
-                        }
-                    }
                     Push(variables, tdata);
+                }
+            break;
+            case 5: // Закрываем таблицу, очищаем стек инициализации
+                open_table_type = 0;
+                if (!IsEmpty(*variables->top)){
+                    StackDispose(variables);
+                }
+                variables = NewStack();
+            break;
+            case 6: // Убрать из стека инициализации первое значение
+                Pop(variables);
+            break;
+
+            case 10: // 10 и далее: работа с метками для генерации условных/безусловных переходов
+                {
+                    // Добавление метки в стек
+                    struct TypedData tdata;
+                    //tdata.data = malloc(sizeof(void*));
+                    tdata.data = write_to;
+                    tdata.type = 0;
+                    Push(labels_test_ops, tdata);
+
+                    struct TypedData td;
+                    td.data = malloc(sizeof(int));
+                    *(int*)td.data = ops_els;
+                    td.type = 0;
+                    Push(labels_ops, td);
+
+                    // Добавление в ОПС пустого символа
+                    write_to += sprintf(write_to, "     ") * sizeof(char);
+
+                    // Добавление в ОПС jf
+                    write_to += sprintf(write_to, "jf ") * sizeof(char);
+                    ops_els+=2;
+                    //printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
+                }
+            break;
+            case 11:
+                {
+                    // Запись значения метки в пустой элемент по метке
+                    struct TypedData tdata = Pop(labels_test_ops);
+                    struct TypedData tdata2 = Pop(labels_test_ops);
+
+                    struct TypedData td = Pop(labels_ops);
+                    struct TypedData td2 = Pop(labels_ops);
+                    int len = sprintf((char*)tdata2.data, "%d", *(int*)td.data);
+                    *((char*)tdata2.data + sizeof(char)*len) = ' ';
+                    free(tdata2.data);
+                    free(td2.data);
+                    free(tdata.data);
+                    free(td.data);
+
+                    // Добавление метки в стек
+                    tdata.data = write_to;
+                    tdata.type = 0;
+                    Push(labels_test_ops, tdata);
+
+                    td.data = malloc(sizeof(int));
+                    *(int*)td.data = ops_els;
+                    td.type = 0;
+                    Push(labels_ops, td);
+
+                    // Добавление в ОПС пустого символа
+                    write_to += sprintf(write_to, "     ") * sizeof(char);
+
+                    // Добавление в ОПС jf
+                    write_to += sprintf(write_to, "jf ") * sizeof(char);
+                    ops_els+=2;
+                }
+            break;
+            case 12:
+                {
+                    // Запись значения в пустой элемент по метке
+                    if(!IsEmpty(*labels_test_ops->top)){
+                        printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
+                        struct TypedData tdata = Pop(labels_test_ops);
+                        int len = sprintf((char*)tdata.data, "%d", ops_els);
+                        *((char*)tdata.data + sizeof(char)*len) = ' ';
+                    }
+                }
+            break;
+            case 13:
+                {
+                    // Добавление метки в стек
+                    struct TypedData tdata;
+                    tdata.data = write_to;
+                    tdata.type = 0;
+                    Push(labels_test_ops, tdata);
+
+                    struct TypedData td;
+                    td.data = malloc(sizeof(int));
+                    *(int*)td.data = ops_els;
+                    td.type = 0;
+                    Push(labels_ops, td);
+                }
+            break;
+            case 14:
+                {
+                    // Запись значения в пустой элемент по метке
+                    struct TypedData tdata = Pop(labels_test_ops);
+                    struct TypedData td = Pop(labels_ops);
+                    int len = sprintf((char*)tdata.data, "%d", ops_els+2);
+                    *((char*)tdata.data + sizeof(char)*len) = ' ';
+
+                    free(tdata.data);
+                    free(td.data);
+                    tdata = Pop(labels_test_ops);
+                    tdata = Pop(labels_ops);
+
+                    // Добавление метки в ОПС
+                    write_to += sprintf(write_to, "%d ", *(int*)tdata.data) * sizeof(char);
+
+                    // Добавление в ОПС j
+                    write_to += sprintf(write_to, "j ") * sizeof(char);
+                    ops_els+=2;
                 }
             break;
         }
@@ -252,6 +437,9 @@ void parser_init(){
     Push(act_magazine, tdata);
 
     variables = NewStack();
+    ops = NewQueue();
+    labels_ops = NewStack();
+    labels_test_ops = NewStack();
 
     lambda = NewList();
     struct List* assign = NULL;
@@ -289,8 +477,8 @@ void parser_init(){
             fill_gen(ind1, rule, act);
         }
         {
-            char* rule[] = {"if", "\\C", "{", "\\P", "}", "\\X", "\\P", "\0"};
-            char* act[] = {"0", "0", "10", "0", "0", "12", "0"};
+            char* rule[] = {"if", "\\C", "{", "\\P", "}", "\\X", "\\Z", "\\P", "\0"};
+            char* act[] = {"0", "0", "10", "0", "0", "0", "12", "0"};
             fill_gen(ind1, rule, act);
         }
         {
@@ -379,7 +567,7 @@ void parser_init(){
     { ind1 = parser_nt_resolver('J',0);
         {
             char* rule[] = {",", "a", "\\O", "\\J", "\0"};
-            char* act[] = {"0", "4", "0", "0"};
+            char* act[] = {"6", "4", "0", "0"};
             fill_gen(ind1, rule, act);
         }
     }
@@ -393,19 +581,19 @@ void parser_init(){
     { ind1 = parser_nt_resolver('X',0);
         {
             char* rule[] = {"else", "\\R", "\0"};
-            char* act[] = {"13", "0"};
+            char* act[] = {"0", "0"};
             fill_gen(ind1, rule, act);
         }
     }
     { ind1 = parser_nt_resolver('R',0);
         {
             char* rule[] = {"if", "\\C", "{", "\\P", "}", "\\X", "\0"};
-            char* act[] = {"11", "0", "0", "0", "0", "0"};
+            char* act[] = {"13", "0", "11", "0", "0", "0"};
             fill_gen(ind1, rule, act);
         }
         {
             char* rule[] = {"{", "\\P", "}", "\0"};
-            char* act[] = {"0", "0", "10"};
+            char* act[] = {"12", "0", "0"};
             fill_gen(ind1, rule, act);
         }
     }
@@ -523,12 +711,12 @@ void parser_init(){
     { ind1 = parser_nt_resolver('L',0);
         {
             char* rule[] = {"a", "\\H", "\\V", "\\U", "]", "\0"};
-            char* act[] = {"a", "0", "0", "0", "1"};
+            char* act[] = {"0", "0", "0", "0", "1"};
             fill_gen(ind1, rule, act);
         }
         {
             char* rule[] = {"k", "\\V", "\\U", "]", "\0"};
-            char* act[] = {"k", "0", "0", "1"};
+            char* act[] = {"0", "0", "0", "1"};
             fill_gen(ind1, rule, act);
         }
         {
@@ -598,33 +786,33 @@ void parser_init(){
     }
     { ind1 = parser_nt_resolver('Q',0);
         {
-            char* rule[] = {"<", "\\E", "\0"};
-            char* act[] = {"0", "<"};
+            char* rule[] = {"<", "\\E", "\\Z", "\0"};
+            char* act[] = {"0", "0", "<"};
             fill_gen(ind1, rule, act);
         }
         {
-            char* rule[] = {">", "\\E", "\0"};
-            char* act[] = {"0", ">"};
+            char* rule[] = {">", "\\E", "\\Z", "\0"};
+            char* act[] = {"0", "0", ">"};
             fill_gen(ind1, rule, act);
         }
         {
-            char* rule[] = {"<=", "\\E", "\0"};
-            char* act[] = {"0", "<="};
+            char* rule[] = {"<=", "\\E", "\\Z", "\0"};
+            char* act[] = {"0", "0", "<="};
             fill_gen(ind1, rule, act);
         }
         {
-            char* rule[] = {">=", "\\E", "\0"};
-            char* act[] = {"0", ">="};
+            char* rule[] = {">=", "\\E", "\\Z", "\0"};
+            char* act[] = {"0", "0", ">="};
             fill_gen(ind1, rule, act);
         }
         {
-            char* rule[] = {"==", "\\E", "\0"};
-            char* act[] = {"0", "=="};
+            char* rule[] = {"==", "\\E", "\\Z", "\0"};
+            char* act[] = {"0", "0", "=="};
             fill_gen(ind1, rule, act);
         }
         {
-            char* rule[] = {"!=", "\\E", "\0"};
-            char* act[] = {"0", "!="};
+            char* rule[] = {"!=", "\\E", "\\Z", "\0"};
+            char* act[] = {"0", "0", "!="};
             fill_gen(ind1, rule, act);
         }
     }
@@ -712,6 +900,9 @@ void parser_dispose(){
     StackDispose(magazine);
     StackDispose(act_magazine);
     StackDispose(variables);
+    //QueueDispose(ops);
+    StackDispose(labels_ops);
+    StackDispose(labels_test_ops);
     tokenizer_dispose();
 }
 

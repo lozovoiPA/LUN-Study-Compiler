@@ -18,8 +18,27 @@ enum ERR_CODES
     ERR_ID_TOO_LARGE = 1,
     ERR_UNKNOWN_ID = 2,
     ERR_EXISTING_ID = 3,
-    ERR_IN_VARIABLES_STACK = 4
+    ERR_IN_VARIABLES_STACK = 4,
+    ERR_INDEX_NOT_INTEGER = 5,
+    ERR_LEXEME_EXPECTED = 6,
+    ERR_UNKNOWN_LEXEME = 7
 };
+
+// Максимальная длина идентификатора
+#define MAX_ID_LEN 64
+extern enum ERR_CODES err_no;
+// Номера строки и символа в ней
+extern int line_no; extern int char_no;
+
+// Переменные, использующиеся при вычислении чисел/идентификаторов
+extern int n; extern double x, d;
+extern char *name;
+
+// Вывод лексического анализатора записывается в глобальные переменные (чтобы к ним имели доступ все подпрограммы)
+extern char _out_st; extern int _out_tk_no;
+extern int _error_lexeme;
+
+void err_codes_resolver();
 
 // Структуры данных
 // смысл типа данных зависит от того, где используется стек
@@ -74,17 +93,6 @@ int tk_resolver(char*);
 int oper_resolver(char*);
 void err_throw();
 
-// Максимальная длина идентификатора
-#define MAX_ID_LEN 64
-extern enum ERR_CODES err_no;
-// Номера строки и символа в ней
-extern int line_no; extern int char_no;
 
-// Переменные, использующиеся при вычислении чисел/идентификаторов
-extern int n; extern double x, d;
-extern char *name;
-
-// Вывод лексического анализатора записывается в глобальные переменные (чтобы к ним имели доступ все подпрограммы)
-extern char _out_st; extern int _out_tk_no;
 
 #endif // COMPILER_GLOBAL_H_INCLUDED

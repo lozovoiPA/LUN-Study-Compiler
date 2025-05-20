@@ -5,6 +5,7 @@ int line_no = 1; int char_no = 0;
 
 int n; double x, d; char *name;
 char _out_st; int _out_tk_no;
+int _error_lexeme;
 
 # define KWRD_AMOUNT 14
 # define OPER_AMOUNT 4
@@ -24,6 +25,30 @@ const char* lexemes = " ak+-*/[](){},;z=<>";
 const char* operations[OPER_AMOUNT] = { // Операции ОПС, которые обозначаются не лексемами
     "unary-", "j", "jf", "ind"
 };
+
+void err_codes_resolver(){
+    switch(err_no){
+
+    case ERR_ID_TOO_LARGE:
+        printf("variable name cannot exceed %d", MAX_ID_LEN);
+        break;
+    case ERR_UNKNOWN_ID:
+        printf("\"%s\" doesn't exist", name);
+        break;
+    case ERR_EXISTING_ID:
+        printf("variable \"%s\" already exists", name);
+        break;
+    case ERR_INDEX_NOT_INTEGER:
+        printf("index of array is not an integer");
+        break;
+    case ERR_LEXEME_EXPECTED:
+        printf("expecting \'%s\'", tk_no_resolver(_error_lexeme));
+        break;
+    default:
+        printf("unknown error");
+        break;
+    }
+}
 
 // список зарезервированных (ключевых) слов
 int kwrd_resolver(char* tk){
