@@ -9,9 +9,9 @@ int _error_lexeme;
 
 # define KWRD_AMOUNT 14
 # define OPER_AMOUNT 4
-// Номер, с которого начинаются ключевые слова в списке лексем
+// РќРѕРјРµСЂ, СЃ РєРѕС‚РѕСЂРѕРіРѕ РЅР°С‡РёРЅР°СЋС‚СЃСЏ РєР»СЋС‡РµРІС‹Рµ СЃР»РѕРІР° РІ СЃРїРёСЃРєРµ Р»РµРєСЃРµРј
 const int KWRD_OFFSET = 19;
-// Ключевые слова
+// РљР»СЋС‡РµРІС‹Рµ СЃР»РѕРІР°
 const char* keywords[KWRD_AMOUNT] =
 {
     "==", "<=", ">=", "!=",
@@ -22,7 +22,7 @@ const char* keywords[KWRD_AMOUNT] =
     "while"
 };
 const char* lexemes = " ak+-*/[](){},;z=<>";
-const char* operations[OPER_AMOUNT] = { // Операции ОПС, которые обозначаются не лексемами
+const char* operations[OPER_AMOUNT] = { // РћРїРµСЂР°С†РёРё РћРџРЎ, РєРѕС‚РѕСЂС‹Рµ РѕР±РѕР·РЅР°С‡Р°СЋС‚СЃСЏ РЅРµ Р»РµРєСЃРµРјР°РјРё
     "unary-", "j", "jf", "ind"
 };
 
@@ -50,17 +50,17 @@ void err_codes_resolver(){
     }
 }
 
-// список зарезервированных (ключевых) слов
+// СЃРїРёСЃРѕРє Р·Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРЅС‹С… (РєР»СЋС‡РµРІС‹С…) СЃР»РѕРІ
 int kwrd_resolver(char* tk){
     for(int i = 0; i < KWRD_AMOUNT; i++){
         if(!strcmp(tk, keywords[i])){
             return (i + KWRD_OFFSET);
         }
     }
-    return 1; // tk не в списке зарезервированных слов
+    return 1; // tk РЅРµ РІ СЃРїРёСЃРєРµ Р·Р°СЂРµР·РµСЂРІРёСЂРѕРІР°РЅРЅС‹С… СЃР»РѕРІ
 }
 
-// Конвертация символической лексемы в ее номер
+// РљРѕРЅРІРµСЂС‚Р°С†РёСЏ СЃРёРјРІРѕР»РёС‡РµСЃРєРѕР№ Р»РµРєСЃРµРјС‹ РІ РµРµ РЅРѕРјРµСЂ
 int tk_resolver(char* tk){
     int tk_len = strlen(tk);
     if(tk_len == 0){
@@ -107,7 +107,7 @@ int oper_resolver(char* tk){
     return tk_no;
 }
 
-// Конвертация номера в лексему (для выводов)
+// РљРѕРЅРІРµСЂС‚Р°С†РёСЏ РЅРѕРјРµСЂР° РІ Р»РµРєСЃРµРјСѓ (РґР»СЏ РІС‹РІРѕРґРѕРІ)
 const char* tk_no_resolver(int tk_no){
     if(tk_no <= 0) return "\0";
     if(tk_no < KWRD_OFFSET){

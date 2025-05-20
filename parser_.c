@@ -25,14 +25,14 @@ void print_variable(struct TypedData);
 void print_variables();
 void push_variable();
 
-#define RULES_W 32 // Число лексем (столбцов в таблице LL(1)-анализатора)
-#define RULES_H 20 // Число состояний (строк в таблице LL(1)-анализатора)
-struct Stack* magazine = NULL; // магазин анализатора
-struct Stack* act_magazine = NULL; // магазин генератора (действий по генерации ОПС)
-struct Stack* variables = NULL; // стек для хранения констант/переменных (при генерации ОПС, т.к. name, n, x лекс. анализатора затираются)
-struct List* lambda; // лямбда - пустой список (инициалицируется в parse_init(), также см. функцию IsEmpty в compiler_global.c), ошибка (пустая клетка в таблице LL(1)-анализатора - NULL)
-//таблицы для генерации символов (терминалов и нетерминалов) в магазин анализатора
-// и действий в магазин генератора
+#define RULES_W 32 // Р§РёСЃР»Рѕ Р»РµРєСЃРµРј (СЃС‚РѕР»Р±С†РѕРІ РІ С‚Р°Р±Р»РёС†Рµ LL(1)-Р°РЅР°Р»РёР·Р°С‚РѕСЂР°)
+#define RULES_H 20 // Р§РёСЃР»Рѕ СЃРѕСЃС‚РѕСЏРЅРёР№ (СЃС‚СЂРѕРє РІ С‚Р°Р±Р»РёС†Рµ LL(1)-Р°РЅР°Р»РёР·Р°С‚РѕСЂР°)
+struct Stack* magazine = NULL; // РјР°РіР°Р·РёРЅ Р°РЅР°Р»РёР·Р°С‚РѕСЂР°
+struct Stack* act_magazine = NULL; // РјР°РіР°Р·РёРЅ РіРµРЅРµСЂР°С‚РѕСЂР° (РґРµР№СЃС‚РІРёР№ РїРѕ РіРµРЅРµСЂР°С†РёРё РћРџРЎ)
+struct Stack* variables = NULL; // СЃС‚РµРє РґР»СЏ С…СЂР°РЅРµРЅРёСЏ РєРѕРЅСЃС‚Р°РЅС‚/РїРµСЂРµРјРµРЅРЅС‹С… (РїСЂРё РіРµРЅРµСЂР°С†РёРё РћРџРЎ, С‚.Рє. name, n, x Р»РµРєСЃ. Р°РЅР°Р»РёР·Р°С‚РѕСЂР° Р·Р°С‚РёСЂР°СЋС‚СЃСЏ)
+struct List* lambda; // Р»СЏРјР±РґР° - РїСѓСЃС‚РѕР№ СЃРїРёСЃРѕРє (РёРЅРёС†РёР°Р»РёС†РёСЂСѓРµС‚СЃСЏ РІ parse_init(), С‚Р°РєР¶Рµ СЃРј. С„СѓРЅРєС†РёСЋ IsEmpty РІ compiler_global.c), РѕС€РёР±РєР° (РїСѓСЃС‚Р°СЏ РєР»РµС‚РєР° РІ С‚Р°Р±Р»РёС†Рµ LL(1)-Р°РЅР°Р»РёР·Р°С‚РѕСЂР° - NULL)
+//С‚Р°Р±Р»РёС†С‹ РґР»СЏ РіРµРЅРµСЂР°С†РёРё СЃРёРјРІРѕР»РѕРІ (С‚РµСЂРјРёРЅР°Р»РѕРІ Рё РЅРµС‚РµСЂРјРёРЅР°Р»РѕРІ) РІ РјР°РіР°Р·РёРЅ Р°РЅР°Р»РёР·Р°С‚РѕСЂР°
+// Рё РґРµР№СЃС‚РІРёР№ РІ РјР°РіР°Р·РёРЅ РіРµРЅРµСЂР°С‚РѕСЂР°
 struct List* rules_gen_symbols[RULES_H][RULES_W];
 struct List* rules_gen_actions[RULES_H][RULES_W];
 
@@ -41,11 +41,11 @@ char parser_sts[] = "P  JO XREUTVG MLHCQZ";
 char test_ops[4096];
 char* write_to;
 
-struct Queue* ops = NULL; // ОПС в виде очереди
-int open_table_type = 0; // Тип объявляемых переменных (см. else в use_action())
-struct Stack* labels_ops = NULL; // стек меток
-struct Stack* labels_test_ops = NULL; // стек меток для тестовой ОПС (выводится в консоль в виде строки)
-int ops_els = 0; // Число элементов ОПС
+struct Queue* ops = NULL; // РћРџРЎ РІ РІРёРґРµ РѕС‡РµСЂРµРґРё
+int open_table_type = 0; // РўРёРї РѕР±СЉСЏРІР»СЏРµРјС‹С… РїРµСЂРµРјРµРЅРЅС‹С… (СЃРј. else РІ use_action())
+struct Stack* labels_ops = NULL; // СЃС‚РµРє РјРµС‚РѕРє
+struct Stack* labels_test_ops = NULL; // СЃС‚РµРє РјРµС‚РѕРє РґР»СЏ С‚РµСЃС‚РѕРІРѕР№ РћРџРЎ (РІС‹РІРѕРґРёС‚СЃСЏ РІ РєРѕРЅСЃРѕР»СЊ РІ РІРёРґРµ СЃС‚СЂРѕРєРё)
+int ops_els = 0; // Р§РёСЃР»Рѕ СЌР»РµРјРµРЅС‚РѕРІ РћРџРЎ
 
 void parser(char* str, int str_len){
     parser_init();
@@ -55,12 +55,12 @@ void parser(char* str, int str_len){
     struct TypedData tdata;
     int res;
     for(int i = 0; (i < str_len) && !err_no;){
-        i = tokenizer(str, i); // Получить лексему
+        i = tokenizer(str, i); // РџРѕР»СѓС‡РёС‚СЊ Р»РµРєСЃРµРјСѓ
         if(!err_no){
             if(_out_tk_no == 2 || _out_tk_no == 1){
-                push_variable(); // Запомнить имя переменой или значение константы
+                push_variable(); // Р—Р°РїРѕРјРЅРёС‚СЊ РёРјСЏ РїРµСЂРµРјРµРЅРѕР№ РёР»Рё Р·РЅР°С‡РµРЅРёРµ РєРѕРЅСЃС‚Р°РЅС‚С‹
             }
-            res = use_rule(_out_tk_no); // Применить правило (генерация символов в оба стека здесь!)
+            res = use_rule(_out_tk_no); // РџСЂРёРјРµРЅРёС‚СЊ РїСЂР°РІРёР»Рѕ (РіРµРЅРµСЂР°С†РёСЏ СЃРёРјРІРѕР»РѕРІ РІ РѕР±Р° СЃС‚РµРєР° Р·РґРµСЃСЊ!)
         }
     }
     if(err_no){
@@ -82,19 +82,19 @@ void use_rule_print(int lx_no){
     print_action_bk(act_magazine->top);
     //printf("\n");
 }
-// Функция, применяющая правила (рекурсивно, пока не будет удалена лексема или не установлена ошибка)
-// Она же проверяет на ошибки.
+// Р¤СѓРЅРєС†РёСЏ, РїСЂРёРјРµРЅСЏСЋС‰Р°СЏ РїСЂР°РІРёР»Р° (СЂРµРєСѓСЂСЃРёРІРЅРѕ, РїРѕРєР° РЅРµ Р±СѓРґРµС‚ СѓРґР°Р»РµРЅР° Р»РµРєСЃРµРјР° РёР»Рё РЅРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅР° РѕС€РёР±РєР°)
+// РћРЅР° Р¶Рµ РїСЂРѕРІРµСЂСЏРµС‚ РЅР° РѕС€РёР±РєРё.
 int use_rule(int lx_no){
-    // Выводы для тестов
+    // Р’С‹РІРѕРґС‹ РґР»СЏ С‚РµСЃС‚РѕРІ
     use_rule_print(lx_no);
 
-    // Берем символ из магазина
+    // Р‘РµСЂРµРј СЃРёРјРІРѕР» РёР· РјР°РіР°Р·РёРЅР°
     struct TypedData tdata = Pop(magazine);
     struct TypedData act_tdata = Pop(act_magazine);
 
     int dt = *(int*) tdata.data;
     free(tdata.data);
-    if(!use_action(act_tdata)){ //Выполняется действие из стека генератора
+    if(!use_action(act_tdata)){ //Р’С‹РїРѕР»РЅСЏРµС‚СЃСЏ РґРµР№СЃС‚РІРёРµ РёР· СЃС‚РµРєР° РіРµРЅРµСЂР°С‚РѕСЂР°
         err_throw();
 
         free(act_tdata.data);
@@ -105,7 +105,7 @@ int use_rule(int lx_no){
 
     printf("  |  %s", test_ops);
     printf("\n\n");
-    if(tdata.type == 0){ // Лексема
+    if(tdata.type == 0){ // Р›РµРєСЃРµРјР°
         if(dt != lx_no){
             err_no = ERR_LEXEME_EXPECTED;
             _error_lexeme = dt;
@@ -116,16 +116,16 @@ int use_rule(int lx_no){
             return 1;
         }
     }
-    else{ // Нетерминал
+    else{ // РќРµС‚РµСЂРјРёРЅР°Р»
         struct List* gen_s = rules_gen_symbols[dt][lx_no-1];
-        if(gen_s == NULL){ // Ошибка
+        if(gen_s == NULL){ // РћС€РёР±РєР°
             err_throw();
             return 0;
         }
-        else if(gen_s == lambda){ // Если лямбда, то в стек ничего не добавляется
+        else if(gen_s == lambda){ // Р•СЃР»Рё Р»СЏРјР±РґР°, С‚Рѕ РІ СЃС‚РµРє РЅРёС‡РµРіРѕ РЅРµ РґРѕР±Р°РІР»СЏРµС‚СЃСЏ
             return use_rule(lx_no);
         }
-        else{ // Иначе добавляем правую часть (в обратном порядке!) в магазины
+        else{ // РРЅР°С‡Рµ РґРѕР±Р°РІР»СЏРµРј РїСЂР°РІСѓСЋ С‡Р°СЃС‚СЊ (РІ РѕР±СЂР°С‚РЅРѕРј РїРѕСЂСЏРґРєРµ!) РІ РјР°РіР°Р·РёРЅС‹
             struct TypedData new_data;
 
             gen_s = Tail(gen_s);
@@ -162,9 +162,9 @@ int use_rule(int lx_no){
 }
 
 int use_action(struct TypedData tdata){
-    if(tdata.type == 1){ // Действие - внести ссылку в ОПС. Необходимо найти ее по имени переменной
+    if(tdata.type == 1){ // Р”РµР№СЃС‚РІРёРµ - РІРЅРµСЃС‚Рё СЃСЃС‹Р»РєСѓ РІ РћРџРЎ. РќРµРѕР±С…РѕРґРёРјРѕ РЅР°Р№С‚Рё РµРµ РїРѕ РёРјРµРЅРё РїРµСЂРµРјРµРЅРЅРѕР№
         struct TypedData tdata = Pop(variables);
-        struct Variable* vt = (struct Variable*)tdata.data; // Получаем идентификатор из стека
+        struct Variable* vt = (struct Variable*)tdata.data; // РџРѕР»СѓС‡Р°РµРј РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РёР· СЃС‚РµРєР°
         if(vt->type != 0){
             err_no = ERR_IN_VARIABLES_STACK;
             err_throw();
@@ -189,8 +189,8 @@ int use_action(struct TypedData tdata){
     }
     else if(tdata.type == 2){
         struct TypedData tdata = Pop(variables);
-        struct Variable* vt = (struct Variable*)tdata.data; // Получаем константу из стека
-        if(vt->type < 5){ // если в стеке была не константа
+        struct Variable* vt = (struct Variable*)tdata.data; // РџРѕР»СѓС‡Р°РµРј РєРѕРЅСЃС‚Р°РЅС‚Сѓ РёР· СЃС‚РµРєР°
+        if(vt->type < 5){ // РµСЃР»Рё РІ СЃС‚РµРєРµ Р±С‹Р»Р° РЅРµ РєРѕРЅСЃС‚Р°РЅС‚Р°
             err_no = ERR_IN_VARIABLES_STACK;
             err_throw();
             return 0;
@@ -227,26 +227,26 @@ int use_action(struct TypedData tdata){
         ops_els++;
         return 1;
     }
-    else{ // Действие - семантическая подпрограмма
+    else{ // Р”РµР№СЃС‚РІРёРµ - СЃРµРјР°РЅС‚РёС‡РµСЃРєР°СЏ РїРѕРґРїСЂРѕРіСЂР°РјРјР°
         int dt = *(int*)tdata.data;
         switch(dt){
-            case 1: // Встретилось real[E], объявляем статические массивы
-                open_table_type = 1; // Тип: ссылка на real
+            case 1: // Р’СЃС‚СЂРµС‚РёР»РѕСЃСЊ real[E], РѕР±СЉСЏРІР»СЏРµРј СЃС‚Р°С‚РёС‡РµСЃРєРёРµ РјР°СЃСЃРёРІС‹
+                open_table_type = 1; // РўРёРї: СЃСЃС‹Р»РєР° РЅР° real
             break;
-            case 2: // Встретилось real[*], объявляем динамические массивы
+            case 2: // Р’СЃС‚СЂРµС‚РёР»РѕСЃСЊ real[*], РѕР±СЉСЏРІР»СЏРµРј РґРёРЅР°РјРёС‡РµСЃРєРёРµ РјР°СЃСЃРёРІС‹
                 open_table_type = 2;
             break;
-            case 3: // Встретилось real (без квадратных скобок), объявляем real (если не объявляем массивы)
+            case 3: // Р’СЃС‚СЂРµС‚РёР»РѕСЃСЊ real (Р±РµР· РєРІР°РґСЂР°С‚РЅС‹С… СЃРєРѕР±РѕРє), РѕР±СЉСЏРІР»СЏРµРј real (РµСЃР»Рё РЅРµ РѕР±СЉСЏРІР»СЏРµРј РјР°СЃСЃРёРІС‹)
                 if(open_table_type == 0){
                     open_table_type = 3;
                 }
             break;
-            case 4: // Внести идентификатор в таблицу, выделить память под переменную
+            case 4: // Р’РЅРµСЃС‚Рё РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РІ С‚Р°Р±Р»РёС†Сѓ, РІС‹РґРµР»РёС‚СЊ РїР°РјСЏС‚СЊ РїРѕРґ РїРµСЂРµРјРµРЅРЅСѓСЋ
                 {
                     struct TypedData tdata = Pop(variables);
-                    struct Variable* v = (struct Variable*)tdata.data; // Получаем значение из стека
-                    switch(open_table_type){ // выделение памяти
-                        case 1: // выделение памяти для статического массива. v - идентификатор массива
+                    struct Variable* v = (struct Variable*)tdata.data; // РџРѕР»СѓС‡Р°РµРј Р·РЅР°С‡РµРЅРёРµ РёР· СЃС‚РµРєР°
+                    switch(open_table_type){ // РІС‹РґРµР»РµРЅРёРµ РїР°РјСЏС‚Рё
+                        case 1: // РІС‹РґРµР»РµРЅРёРµ РїР°РјСЏС‚Рё РґР»СЏ СЃС‚Р°С‚РёС‡РµСЃРєРѕРіРѕ РјР°СЃСЃРёРІР°. v - РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РјР°СЃСЃРёРІР°
                             {
                                 if(v->type != 0){
                                     err_no = ERR_IN_VARIABLES_STACK;
@@ -255,8 +255,8 @@ int use_action(struct TypedData tdata){
                                     return 0;
                                 }
                                 struct TypedData td = Pop(variables);
-                                struct Variable *vt = (struct Variable*)td.data; // vt - размер массива (очередное значение из стека)
-                                if(vt->type != 6){ // если vt не const int
+                                struct Variable *vt = (struct Variable*)td.data; // vt - СЂР°Р·РјРµСЂ РјР°СЃСЃРёРІР° (РѕС‡РµСЂРµРґРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РёР· СЃС‚РµРєР°)
+                                if(vt->type != 6){ // РµСЃР»Рё vt РЅРµ const int
                                     err_no = ERR_INDEX_NOT_INTEGER;
                                     err_throw();
                                     free(v->address);
@@ -264,14 +264,14 @@ int use_action(struct TypedData tdata){
                                 }
                                 int size = *(int*)vt->address;
 
-                                v->address = malloc(sizeof(int) * 3); // 0 - ссылка на первый элемент, 1 - размер элемента в байтах, 2 - число элементов
+                                v->address = malloc(sizeof(int) * 3); // 0 - СЃСЃС‹Р»РєР° РЅР° РїРµСЂРІС‹Р№ СЌР»РµРјРµРЅС‚, 1 - СЂР°Р·РјРµСЂ СЌР»РµРјРµРЅС‚Р° РІ Р±Р°Р№С‚Р°С…, 2 - С‡РёСЃР»Рѕ СЌР»РµРјРµРЅС‚РѕРІ
                                 (((int*)v->address)[0]) = (int)malloc(sizeof(double) * size);
                                 (((int*)v->address)[1]) = sizeof(double);
                                 (((int*)v->address)[2]) = size;
                                 Push(variables, td);
                             }
                         break;
-                        case 2: // выделение памяти для паспорта динамического массива. v - идентификатор массива
+                        case 2: // РІС‹РґРµР»РµРЅРёРµ РїР°РјСЏС‚Рё РґР»СЏ РїР°СЃРїРѕСЂС‚Р° РґРёРЅР°РјРёС‡РµСЃРєРѕРіРѕ РјР°СЃСЃРёРІР°. v - РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РјР°СЃСЃРёРІР°
                             {
                                 if(v->type != 0){
                                     err_no = ERR_IN_VARIABLES_STACK;
@@ -300,20 +300,20 @@ int use_action(struct TypedData tdata){
                     Push(variables, tdata);
                 }
             break;
-            case 5: // Закрываем таблицу, очищаем стек инициализации
+            case 5: // Р—Р°РєСЂС‹РІР°РµРј С‚Р°Р±Р»РёС†Сѓ, РѕС‡РёС‰Р°РµРј СЃС‚РµРє РёРЅРёС†РёР°Р»РёР·Р°С†РёРё
                 open_table_type = 0;
                 if (!IsEmpty(*variables->top)){
                     StackDispose(variables);
                 }
                 variables = NewStack();
             break;
-            case 6: // Убрать из стека инициализации первое значение
+            case 6: // РЈР±СЂР°С‚СЊ РёР· СЃС‚РµРєР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё РїРµСЂРІРѕРµ Р·РЅР°С‡РµРЅРёРµ
                 Pop(variables);
             break;
 
-            case 10: // 10 и далее: работа с метками для генерации условных/безусловных переходов
+            case 10: // 10 Рё РґР°Р»РµРµ: СЂР°Р±РѕС‚Р° СЃ РјРµС‚РєР°РјРё РґР»СЏ РіРµРЅРµСЂР°С†РёРё СѓСЃР»РѕРІРЅС‹С…/Р±РµР·СѓСЃР»РѕРІРЅС‹С… РїРµСЂРµС…РѕРґРѕРІ
                 {
-                    // Добавление метки в стек
+                    // Р”РѕР±Р°РІР»РµРЅРёРµ РјРµС‚РєРё РІ СЃС‚РµРє
                     struct TypedData tdata;
                     //tdata.data = malloc(sizeof(void*));
                     tdata.data = write_to;
@@ -326,10 +326,10 @@ int use_action(struct TypedData tdata){
                     td.type = 0;
                     Push(labels_ops, td);
 
-                    // Добавление в ОПС пустого символа
+                    // Р”РѕР±Р°РІР»РµРЅРёРµ РІ РћРџРЎ РїСѓСЃС‚РѕРіРѕ СЃРёРјРІРѕР»Р°
                     write_to += sprintf(write_to, "     ") * sizeof(char);
 
-                    // Добавление в ОПС jf
+                    // Р”РѕР±Р°РІР»РµРЅРёРµ РІ РћРџРЎ jf
                     write_to += sprintf(write_to, "jf ") * sizeof(char);
                     ops_els+=2;
                     //printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
@@ -337,7 +337,7 @@ int use_action(struct TypedData tdata){
             break;
             case 11:
                 {
-                    // Запись значения метки в пустой элемент по метке
+                    // Р—Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёСЏ РјРµС‚РєРё РІ РїСѓСЃС‚РѕР№ СЌР»РµРјРµРЅС‚ РїРѕ РјРµС‚РєРµ
                     struct TypedData tdata = Pop(labels_test_ops);
                     struct TypedData tdata2 = Pop(labels_test_ops);
 
@@ -350,7 +350,7 @@ int use_action(struct TypedData tdata){
                     free(tdata.data);
                     free(td.data);
 
-                    // Добавление метки в стек
+                    // Р”РѕР±Р°РІР»РµРЅРёРµ РјРµС‚РєРё РІ СЃС‚РµРє
                     tdata.data = write_to;
                     tdata.type = 0;
                     Push(labels_test_ops, tdata);
@@ -360,17 +360,17 @@ int use_action(struct TypedData tdata){
                     td.type = 0;
                     Push(labels_ops, td);
 
-                    // Добавление в ОПС пустого символа
+                    // Р”РѕР±Р°РІР»РµРЅРёРµ РІ РћРџРЎ РїСѓСЃС‚РѕРіРѕ СЃРёРјРІРѕР»Р°
                     write_to += sprintf(write_to, "     ") * sizeof(char);
 
-                    // Добавление в ОПС jf
+                    // Р”РѕР±Р°РІР»РµРЅРёРµ РІ РћРџРЎ jf
                     write_to += sprintf(write_to, "jf ") * sizeof(char);
                     ops_els+=2;
                 }
             break;
             case 12:
                 {
-                    // Запись значения в пустой элемент по метке
+                    // Р—Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёСЏ РІ РїСѓСЃС‚РѕР№ СЌР»РµРјРµРЅС‚ РїРѕ РјРµС‚РєРµ
                     if(!IsEmpty(*labels_test_ops->top)){
                         printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
                         struct TypedData tdata = Pop(labels_test_ops);
@@ -381,7 +381,7 @@ int use_action(struct TypedData tdata){
             break;
             case 13:
                 {
-                    // Добавление метки в стек
+                    // Р”РѕР±Р°РІР»РµРЅРёРµ РјРµС‚РєРё РІ СЃС‚РµРє
                     struct TypedData tdata;
                     tdata.data = write_to;
                     tdata.type = 0;
@@ -396,7 +396,7 @@ int use_action(struct TypedData tdata){
             break;
             case 14:
                 {
-                    // Запись значения в пустой элемент по метке
+                    // Р—Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёСЏ РІ РїСѓСЃС‚РѕР№ СЌР»РµРјРµРЅС‚ РїРѕ РјРµС‚РєРµ
                     struct TypedData tdata = Pop(labels_test_ops);
                     struct TypedData td = Pop(labels_ops);
                     int len = sprintf((char*)tdata.data, "%d", ops_els+2);
@@ -407,10 +407,10 @@ int use_action(struct TypedData tdata){
                     tdata = Pop(labels_test_ops);
                     tdata = Pop(labels_ops);
 
-                    // Добавление метки в ОПС
+                    // Р”РѕР±Р°РІР»РµРЅРёРµ РјРµС‚РєРё РІ РћРџРЎ
                     write_to += sprintf(write_to, "%d ", *(int*)tdata.data) * sizeof(char);
 
-                    // Добавление в ОПС j
+                    // Р”РѕР±Р°РІР»РµРЅРёРµ РІ РћРџРЎ j
                     write_to += sprintf(write_to, "j ") * sizeof(char);
                     ops_els+=2;
                 }
@@ -444,7 +444,7 @@ void parser_init(){
     lambda = NewList();
     struct List* assign = NULL;
 
-    // Инициализация строк
+    // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ СЃС‚СЂРѕРє
     for(int i = 0; i < RULES_H; i++){
         switch(parser_sts[i]){
             case 'P':
@@ -468,7 +468,7 @@ void parser_init(){
             rules_gen_actions[i][j] = NULL;
         }
     }
-    // Заполняем правила (вручную, т.к. лексемы/нетерминалы могут состоять из более чем одного символа)
+    // Р—Р°РїРѕР»РЅСЏРµРј РїСЂР°РІРёР»Р° (РІСЂСѓС‡РЅСѓСЋ, С‚.Рє. Р»РµРєСЃРµРјС‹/РЅРµС‚РµСЂРјРёРЅР°Р»С‹ РјРѕРіСѓС‚ СЃРѕСЃС‚РѕСЏС‚СЊ РёР· Р±РѕР»РµРµ С‡РµРј РѕРґРЅРѕРіРѕ СЃРёРјРІРѕР»Р°)
     int ind1, ind2;
     { ind1 = parser_nt_resolver('P',0);
         {
@@ -514,7 +514,7 @@ void parser_init(){
             fill_gen(ind1, rule, act);
         }
     }
-    { ind1 = parser_nt_resolver('P',2); //также: O1, E
+    { ind1 = parser_nt_resolver('P',2); //С‚Р°РєР¶Рµ: O1, E
         {
             char* rule[] = {"a", "\\H", "\\V", "\\U", "\0"};
             char* act[] = {"a", "0", "0", "0"};
@@ -653,7 +653,7 @@ void parser_init(){
             fill_gen(ind1, rule, act);
         }
     }
-    { ind1 = parser_nt_resolver('G',0); // Также: G1
+    { ind1 = parser_nt_resolver('G',0); // РўР°РєР¶Рµ: G1
         {
             char* rule[] = {"a", "\\H", "\0"};
             char* act[] = {"a", "0"};
@@ -849,18 +849,18 @@ struct List* gen_actions(char* act[], int len){
         tk_no = oper_resolver(act[i]);
 
         if(tk_no){
-            if(tk_no > 2){ // Действие: внести в ОПС операцию
+            if(tk_no > 2){ // Р”РµР№СЃС‚РІРёРµ: РІРЅРµСЃС‚Рё РІ РћРџРЎ РѕРїРµСЂР°С†РёСЋ
                 tdata.data = malloc(sizeof(int));
                 *(int*)(tdata.data) = tk_no;
                 tdata.type = 3;
             }
-            else{ // Действие: внести в ОПС константу (необходимо перед этим получить ее значение и тип) или переменную (необходимо разыменовать, получить значение ссылки и тип)
+            else{ // Р”РµР№СЃС‚РІРёРµ: РІРЅРµСЃС‚Рё РІ РћРџРЎ РєРѕРЅСЃС‚Р°РЅС‚Сѓ (РЅРµРѕР±С…РѕРґРёРјРѕ РїРµСЂРµРґ СЌС‚РёРј РїРѕР»СѓС‡РёС‚СЊ РµРµ Р·РЅР°С‡РµРЅРёРµ Рё С‚РёРї) РёР»Рё РїРµСЂРµРјРµРЅРЅСѓСЋ (РЅРµРѕР±С…РѕРґРёРјРѕ СЂР°Р·С‹РјРµРЅРѕРІР°С‚СЊ, РїРѕР»СѓС‡РёС‚СЊ Р·РЅР°С‡РµРЅРёРµ СЃСЃС‹Р»РєРё Рё С‚РёРї)
                 tdata.data = malloc(sizeof(int));
                 *(int*)(tdata.data) = -1;
                 tdata.type = tk_no;
             }
         }
-        else{ // Пустое действие или семантическая подпрограмма
+        else{ // РџСѓСЃС‚РѕРµ РґРµР№СЃС‚РІРёРµ РёР»Рё СЃРµРјР°РЅС‚РёС‡РµСЃРєР°СЏ РїРѕРґРїСЂРѕРіСЂР°РјРјР°
             tdata.data = malloc(sizeof(int));
             *(int*)(tdata.data) = StringToInt(act[i]);
             tdata.type = 0;
@@ -870,7 +870,7 @@ struct List* gen_actions(char* act[], int len){
     return assign;
 };
 
-// Для тестов правильности заполнения таблиц
+// Р”Р»СЏ С‚РµСЃС‚РѕРІ РїСЂР°РІРёР»СЊРЅРѕСЃС‚Рё Р·Р°РїРѕР»РЅРµРЅРёСЏ С‚Р°Р±Р»РёС†
 void print_tables(){
     struct List* out = NULL;
     for(int i = 0; i < RULES_H; i++){
@@ -957,7 +957,7 @@ int parser_nt_resolver(char nt_ch, int ind){
     }
 }
 
-// Только для тестов, вывод содержимого стека/списков таблиц
+// РўРѕР»СЊРєРѕ РґР»СЏ С‚РµСЃС‚РѕРІ, РІС‹РІРѕРґ СЃРѕРґРµСЂР¶РёРјРѕРіРѕ СЃС‚РµРєР°/СЃРїРёСЃРєРѕРІ С‚Р°Р±Р»РёС†
 void print_symbol(struct TypedData tdata){
     int dt = *(int*)tdata.data;
     if(tdata.type == 0){
