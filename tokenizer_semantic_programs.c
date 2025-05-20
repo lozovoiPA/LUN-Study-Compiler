@@ -2,6 +2,9 @@
 #include "tokenizer_semantic_programs.h"
 
 void pr_err_throw(char c){
+    if(err_no == 0){
+        err_no = ERR_UNKNOWN_LEXEME;
+    }
     err_throw();
 }
 
