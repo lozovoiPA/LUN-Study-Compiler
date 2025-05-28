@@ -107,12 +107,16 @@ double taylor_sqrt(double x) {
 
 //возвращает реальное значение (если ссылка — берет из memory, иначе возвращает значение напрямую).
 double resolve(OpsStackItem s) {
-    if (s.type == 1 || s.type == 2 || s.type == 3) return memory[s.value]; // ссылки
-    if (s.type == 5 || s.type == 6) return s.value; // константы
-    printf("Ошибка: недопустимый тип для resolve: %d\n", s.type);
-    exit(1);
+    switch (s.type) {
+        case 1: case 2: case 3:
+            return memory[s.value];
+        case 5: case 6:
+            return s.value;
+        default:
+            printf("Ошибка: недопустимый тип для resolve: %d\n", s.type);
+            exit(1);
+    }
 }
-
 //выполняет одну из операций, в зависимости от кода op
 void exec_op(int op, int *pc, OpsItem *ops) {
     OpsStackItem a, b;
@@ -142,17 +146,21 @@ void exec_op(int op, int *pc, OpsItem *ops) {
         case 5: // ind (индексация массива)
             b = pop(); // индекс
             a = pop(); // массив
-            
-            // Проверка типов
-            if (b.type != 6) {
-                printf("Ошибка: индекс должен быть целым числом, получено тип %d\n", b.type);
-                exit(1);
-            }
+
+            // Проверка типа массива
             if (a.type != 1 && a.type != 2) {
                 printf("Ошибка: индексация возможна только для массивов, получено тип %d\n", a.type);
                 exit(1);
             }
-            push(a.value + resolve(b), 1); // считаем адрес и возвращаем ссылку
+
+            // Проверка, что индекс — целое число
+            double index_val = resolve(b);
+            if (floor(index_val) != index_val) {
+                printf("Ошибка: индекс должен быть целым числом, получено %f\n", index_val);
+                exit(1);
+            }
+
+            push(a.value + (int)index_val, 1); // считаем адрес и возвращаем ссылку
             break;
         case 6: // +
             b = pop(); a = pop();
