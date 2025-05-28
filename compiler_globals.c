@@ -169,13 +169,15 @@ struct Stack* NewStack(){
 };
 
 void ListDispose(struct List* list){
-    struct List* nextEl;
-    while(list->next != NULL){
-        nextEl = list->next;
+    struct List* nextEl = list->next;
+    while(nextEl != NULL){
+
         //free(list->tdata.data);
-        free((struct List*)list);
+        free(list);
+        list = nextEl;
+        nextEl = list->next;
     }
-    free((struct List*)nextEl);
+    free(list);
 }
 void StackDispose(struct Stack* stack){
     ListDispose(stack->top);
@@ -189,7 +191,7 @@ int IsEmpty(struct List list){
     }
     return 0;
 }
-struct List* Append(struct List *list, struct TypedData tdata){
+struct List* ListAppend(struct List *list, struct TypedData tdata){
     if(IsEmpty(*list)){
         list->tdata = tdata;
         return list;
@@ -207,6 +209,27 @@ struct List* Append(struct List *list, struct TypedData tdata){
         return list->next;
     }
 }
+struct TypedData ListGetItem(struct List list, int i){
+    struct TypedData td;
+    td.data = NULL;
+    td.type = -1;
+    if(IsEmpty(list)){
+        return td;
+    }
+    if(i == 0){
+        return list.tdata;
+    }
+    int r = 0;
+    while(r < i && list.next != NULL){
+        r++;
+        list = *list.next;
+    }
+    if(r != i){
+        return td;
+    }
+    return list.tdata;
+};
+
 struct TypedData RemoveLast(struct List* list){
     struct TypedData tdata;
     tdata.data = NULL; tdata.type = -1;
@@ -254,10 +277,44 @@ void PrintList(struct List list){
         printf("list is empty\n");
     }
     else{
-        printf("(%p, %d)\n", list.tdata.data, list.tdata.type);
+        //printf("(%p, %d)\n", list.tdata.data, list.tdata.type);
+        if(list.tdata.type >= 5){
+                if(list.tdata.type == 5){
+                    printf("(%g, %d)\n", *(double*)list.tdata.data, list.tdata.type);
+                }
+                else{
+                    printf("(%d, %d)\n", *(int*)list.tdata.data, list.tdata.type);
+                }
+
+            }
+            else if(list.tdata.type >= 1){
+                printf("(%p, %d)\n", list.tdata.data, list.tdata.type);
+            }
+            else if(list.tdata.type == 0){
+                printf("(%s, %d)\n", oper_no_resolver(*(int*)list.tdata.data), list.tdata.type);
+            }
+            else{
+                printf("(empty space)\n");
+            }
+
         while(list.next != NULL){
             list = *(list.next);
-            printf("(%p, %d)\n", list.tdata.data, list.tdata.type);
+
+            if(list.tdata.type >= 5){
+                if(list.tdata.type == 5){
+                    printf("(%g, %d)\n", *(double*)list.tdata.data, list.tdata.type);
+                }
+                else{
+                    printf("(%d, %d)\n", *(int*)list.tdata.data, list.tdata.type);
+                }
+
+            }
+            else if(list.tdata.type >= 1){
+                printf("(%p, %d)\n", list.tdata.data, list.tdata.type);
+            }
+            else{
+                printf("(%s, %d)\n", oper_no_resolver(*(int*)list.tdata.data), list.tdata.type);
+            }
         }
     }
 }
@@ -276,7 +333,7 @@ void PrintListBackwards(struct List list){
 }
 
 struct Stack* Push(struct Stack *stack, struct TypedData tdata){
-    stack->top = Append(stack->top, tdata);
+    stack->top = ListAppend(stack->top, tdata);
     return stack;
 }
 

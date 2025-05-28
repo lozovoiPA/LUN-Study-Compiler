@@ -70,11 +70,13 @@ void ListDispose(struct List*);
 void StackDispose(struct Stack*);
 
 int IsEmpty(struct List);
-struct List* Append(struct List*, struct TypedData);
+struct List* ListAppend(struct List*, struct TypedData);
+struct TypedData ListGetItem(struct List, int i);
+
 struct TypedData RemoveLast(struct List*);
 struct TypedData RemoveFirst(struct List*);
 struct List* Tail(struct List*);
-void PrintList(struct List);
+void PrintList(struct List );
 void PrintListBackwards(struct List);
 
 struct Stack* Push(struct Stack*, struct TypedData);

@@ -53,7 +53,6 @@ OpsItem* parse(char* str){
 
     int str_len = strlen(str)+1;
 
-    struct TypedData tdata;
     int res;
     for(int i = 0; (i < str_len) && !err_no;){
         i = tokenizer(str, i); // Получить лексему
@@ -69,7 +68,7 @@ OpsItem* parse(char* str){
         err_codes_resolver();
     } else{
         //printf("\n\n%s", test_ops);
-
+        PrintList(*ops);
     }
     //VariableTable_print();
     parser_dispose();
@@ -184,6 +183,7 @@ int use_action(struct TypedData tdata){
         struct TypedData td;
         td.data = v->address;
         td.type = v->type;
+        ListAppend(ops, td);
         //printf("%d\n", (int)(v->address));
 
         //QueuePush(ops, td);
@@ -191,7 +191,7 @@ int use_action(struct TypedData tdata){
         ops_els++;
         return 1;
     }
-    else if(tdata.type == 2){
+    else if(tdata.type == 2){ // Действие - внести константу в ОПС
         struct TypedData tdata = Pop(variables);
         struct Variable* vt = (struct Variable*)tdata.data; // Получаем константу из стека
         if(vt->type < 5){ // если в стеке была не константа
@@ -199,24 +199,27 @@ int use_action(struct TypedData tdata){
             err_throw();
             return 0;
         }
+        struct TypedData td;
         if(vt->type == 5){ // real
             write_to += sprintf(write_to, "%g ", *(double*)vt->address) * sizeof(char);
 
-            struct TypedData td;
             td.data = malloc(sizeof(double));
             *(double*)td.data = *(double*)vt->address;
             td.type = vt->type;
-            //QueuePush(ops, td);
+
         }
         else{ // int
             write_to += sprintf(write_to, "%d ", *(int*)vt->address) * sizeof(char);
 
-            struct TypedData td;
+
             td.data = malloc(sizeof(int));
             *(int*)td.data = *(int*)vt->address;
             td.type = vt->type;
-            //QueuePush(ops, td);
+
         }
+        ListAppend(ops, td);
+
+
         ops_els++;
         return 1;
     }
@@ -227,7 +230,7 @@ int use_action(struct TypedData tdata){
         td.data = malloc(sizeof(int));
         *(int*)td.data = *(int*)tdata.data;
         td.type = 0;
-        //QueuePush(ops, td);
+        ListAppend(ops, td);
         ops_els++;
         return 1;
     }
@@ -332,9 +335,23 @@ int use_action(struct TypedData tdata){
 
                     // Добавление в ОПС пустого символа
                     write_to += sprintf(write_to, "     ") * sizeof(char);
+                    //=====
+                    struct TypedData ops_el;
+                    ops_el.data = malloc(sizeof(int));
+                    *(int*)ops_el.data = -1;
+                    ops_el.type = -1;
+                    ListAppend(ops, ops_el);
+
+                    //ops_els++;
 
                     // Добавление в ОПС jf
                     write_to += sprintf(write_to, "jf ") * sizeof(char);
+                    //=====
+                    ops_el.data = malloc(sizeof(int));
+                    *(int*)ops_el.data = oper_resolver("jf");
+                    ops_el.type = 0;
+                    ListAppend(ops, ops_el);
+
                     ops_els+=2;
                     //printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
                 }
@@ -349,6 +366,18 @@ int use_action(struct TypedData tdata){
                     struct TypedData td2 = Pop(labels_ops);
                     int len = sprintf((char*)tdata2.data, "%d", *(int*)td.data);
                     *((char*)tdata2.data + sizeof(char)*len) = ' ';
+                    //=====
+                    struct TypedData ops_el = ListGetItem(*ops, *(int*)td2.data);
+                    if(ops_el.data != NULL){
+                            printf("SOMETHING WENT right (STILL WRONG)!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+                        *(int*)ops_el.data = *(int*)td.data;
+                        ops_el.type = 6;
+                    }
+                    else{
+                        printf("SOMETHING WENT WRONG!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+                    }
+
+
                     //free((char*)tdata2.data); //освобождаем указатель на часть какой-то строки. из-за этого и были ошибки кучи
                     free(td2.data);
                     //free((char*)tdata.data);
@@ -366,9 +395,20 @@ int use_action(struct TypedData tdata){
 
                     // Добавление в ОПС пустого символа
                     write_to += sprintf(write_to, "     ") * sizeof(char);
+                    //=====
+                    ops_el.data = malloc(sizeof(int));
+                    *(int*)ops_el.data = -1;
+                    ops_el.type = -1;
+                    ListAppend(ops, ops_el);
 
                     // Добавление в ОПС jf
                     write_to += sprintf(write_to, "jf ") * sizeof(char);
+                    //=====
+                    ops_el.data = malloc(sizeof(int));
+                    *(int*)ops_el.data = oper_resolver("jf");
+                    ops_el.type = 0;
+                    ListAppend(ops, ops_el);
+
                     ops_els+=2;
                 }
             break;
@@ -376,7 +416,7 @@ int use_action(struct TypedData tdata){
                 {
                     // Запись значения в пустой элемент по метке
                     if(!IsEmpty(*labels_test_ops->top)){
-                        printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
+                        //printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
                         struct TypedData tdata = Pop(labels_test_ops);
                         int len = sprintf((char*)tdata.data, "%d", ops_els);
                         *((char*)tdata.data + sizeof(char)*len) = ' ';
@@ -836,10 +876,10 @@ struct List* gen_symbols(char* rule[], int len){
     struct List* assign = NewList();
     for(int i = 0; i < len; i++){
         if(rule[i][0]=='\\'){
-            Append(assign, nterm(rule[i][1], rule[i][2] - '0'));
+            ListAppend(assign, nterm(rule[i][1], rule[i][2] - '0'));
         }
         else{
-            Append(assign, lexeme(rule[i]));
+            ListAppend(assign, lexeme(rule[i]));
         }
     }
     return assign;
@@ -869,7 +909,7 @@ struct List* gen_actions(char* act[], int len){
             *(int*)(tdata.data) = StringToInt(act[i]);
             tdata.type = 0;
         }
-        Append(assign, tdata);
+        ListAppend(assign, tdata);
     }
     return assign;
 };
