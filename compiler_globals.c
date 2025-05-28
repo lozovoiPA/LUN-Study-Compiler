@@ -209,25 +209,22 @@ struct List* ListAppend(struct List *list, struct TypedData tdata){
         return list->next;
     }
 }
-struct TypedData ListGetItem(struct List list, int i){
-    struct TypedData td;
-    td.data = NULL;
-    td.type = -1;
-    if(IsEmpty(list)){
-        return td;
+struct TypedData* ListGetItem(struct List* list, int i){
+    if(IsEmpty(*list)){
+        return NULL;
     }
     if(i == 0){
-        return list.tdata;
+        return &(list->tdata);
     }
     int r = 0;
-    while(r < i && list.next != NULL){
+    while(r < i && list->next != NULL){
         r++;
-        list = *list.next;
+        list = list->next;
     }
     if(r != i){
-        return td;
+        return NULL;
     }
-    return list.tdata;
+    return &(list->tdata);
 };
 
 struct TypedData RemoveLast(struct List* list){
@@ -294,7 +291,7 @@ void PrintList(struct List list){
                 printf("(%s, %d)\n", oper_no_resolver(*(int*)list.tdata.data), list.tdata.type);
             }
             else{
-                printf("(empty space)\n");
+                printf("( )\n");
             }
 
         while(list.next != NULL){

@@ -367,16 +367,11 @@ int use_action(struct TypedData tdata){
                     int len = sprintf((char*)tdata2.data, "%d", *(int*)td.data);
                     *((char*)tdata2.data + sizeof(char)*len) = ' ';
                     //=====
-                    struct TypedData ops_el = ListGetItem(*ops, *(int*)td2.data);
-                    if(ops_el.data != NULL){
-                            printf("SOMETHING WENT right (STILL WRONG)!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-                        *(int*)ops_el.data = *(int*)td.data;
-                        ops_el.type = 6;
+                    struct TypedData* ops_elt = ListGetItem(ops, *(int*)td2.data);
+                    if(ops_elt != NULL){
+                        *(int*)ops_elt->data = *(int*)td.data;
+                        ops_elt->type = 6;
                     }
-                    else{
-                        printf("SOMETHING WENT WRONG!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-                    }
-
 
                     //free((char*)tdata2.data); //освобождаем указатель на часть какой-то строки. из-за этого и были ошибки кучи
                     free(td2.data);
@@ -396,6 +391,7 @@ int use_action(struct TypedData tdata){
                     // Добавление в ОПС пустого символа
                     write_to += sprintf(write_to, "     ") * sizeof(char);
                     //=====
+                    struct TypedData ops_el;
                     ops_el.data = malloc(sizeof(int));
                     *(int*)ops_el.data = -1;
                     ops_el.type = -1;
@@ -418,8 +414,15 @@ int use_action(struct TypedData tdata){
                     if(!IsEmpty(*labels_test_ops->top)){
                         //printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
                         struct TypedData tdata = Pop(labels_test_ops);
+                        struct TypedData td = Pop(labels_ops);
                         int len = sprintf((char*)tdata.data, "%d", ops_els);
                         *((char*)tdata.data + sizeof(char)*len) = ' ';
+                        //=====
+                        struct TypedData* ops_elt = ListGetItem(ops, *(int*)td.data);
+                        if(ops_elt != NULL){
+                            *(int*)ops_elt->data = ops_els;
+                            ops_elt->type = 6;
+                        }
                     }
                 }
             break;
@@ -445,6 +448,13 @@ int use_action(struct TypedData tdata){
                     struct TypedData td = Pop(labels_ops);
                     int len = sprintf((char*)tdata.data, "%d", ops_els+2);
                     *((char*)tdata.data + sizeof(char)*len) = ' ';
+                    //=====
+                    struct TypedData* ops_elt = ListGetItem(ops, *(int*)td.data);
+                    if(ops_elt != NULL){
+                        *(int*)ops_elt->data = ops_els+2;
+                        ops_elt->type = 6;
+                    }
+
 
                     //free((char*)tdata.data);
                     free(td.data);
@@ -453,9 +463,21 @@ int use_action(struct TypedData tdata){
 
                     // Добавление метки в ОПС
                     write_to += sprintf(write_to, "%d ", *(int*)td.data) * sizeof(char);
+                    //=====
+                    struct TypedData ops_el;
+                    ops_el.data = malloc(sizeof(int));
+                    *(int*)ops_el.data = *(int*)td.data;
+                    ops_el.type = 6;
+                    ListAppend(ops, ops_el);
 
                     // Добавление в ОПС j
                     write_to += sprintf(write_to, "j ") * sizeof(char);
+                    //=====
+                    ops_el.data = malloc(sizeof(int));
+                    *(int*)ops_el.data = oper_resolver("j");
+                    ops_el.type = 0;
+                    ListAppend(ops, ops_el);
+
                     ops_els+=2;
                 }
             break;

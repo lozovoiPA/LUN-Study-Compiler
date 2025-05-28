@@ -71,7 +71,7 @@ void StackDispose(struct Stack*);
 
 int IsEmpty(struct List);
 struct List* ListAppend(struct List*, struct TypedData);
-struct TypedData ListGetItem(struct List, int i);
+struct TypedData* ListGetItem(struct List*, int i);
 
 struct TypedData RemoveLast(struct List*);
 struct TypedData RemoveFirst(struct List*);

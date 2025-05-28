@@ -1,5 +1,5 @@
 #include "parser_.h"
-
+#include "parser_semantic_programs.h"
 int main()
 {
     // тестовые строки
@@ -21,7 +21,7 @@ int main()
     "if(6 < 12 + 343) {\nwrite(10);\n} \nelse if(6 + 3 != 25) { \nwrite(10 + 2); \n} \nelse { \nwrite(10 + 2); \n} \nwrite(100);"; // if-elseif-else
 
     char str19[] =
-    "real i = 10;\nwhile(i > 0) {\nwrite(78 - i); \ni = i - 1; \n} \nwrite(i); \ni = 10; "; // while
+    "real j = 10;\nwhile(j > 0) {\nwrite(78 - j); \nj = j - 1; \n} \nwrite(j); \ni = 10; "; // while
 
     char str20[] =
     "if 10 \n i = 25;"; // error
@@ -33,11 +33,12 @@ int main()
     "real[4] a, b, c;\na(0) = 10;\nwrrtweke(a[0]);"; // более сложные ошибки зависят от пары терминал-нетерминал
 
     // поменяйте указатель на какую-либо из тестовых строк, чтобы ее проанализировать
-    char* str = str18;
+    char* str = str19;
     printf("%s\n", str);
 
     parse(str);
-
+    printf("\n\n");
+    VariableTable_print();
     return 0;
 }
 
