@@ -1,18 +1,41 @@
 #include "parser_.h"
 #include "parser_semantic_programs.h"
+
+#define MAX_FILE_SIZE 1024 * 1024 // Максимальный размер файла (1 МБ)
+
 int main()
 {
-    // С‚РµСЃС‚РѕРІС‹Рµ СЃС‚СЂРѕРєРё
+    // Открытие файла для чтения
+    FILE *file = fopen("input.txt", "r");
+    if (file == NULL) {
+        perror("Ошибка открытия файла");
+        return EXIT_FAILURE;
+    }
+
+    char *buffer = malloc(MAX_FILE_SIZE);
+    if (buffer == NULL) {
+        perror("Ошибка выделения памяти");
+        fclose(file);
+        return EXIT_FAILURE;
+    }
+
+    size_t bytesRead = fread(buffer, sizeof(char), MAX_FILE_SIZE - 1, file);
+    buffer[bytesRead] = '\0'; // Завершение строки нулевым символом
+
+    // Закрытие файла
+    fclose(file);
+
+    // тестовые строки
 
     char str12[] =
-    "real a, b = 12.4 + 1, c = 10;\na = b - c;\nwrite(a);"; // РѕР±СЉСЏРІР»РµРЅРёРµ real
+    "real a, b = 12.4 + 1, c = 10;\na = b - c;\nwrite(a);"; // объявление real
     char str13[] =
-    "real[4] a, b, c;\na[0] = 10;\nwrite(a[0]);"; // РѕР±СЉСЏРІР»РµРЅРёРµ real[E]
+    "real[4] a, b, c;\na[0] = 10;\nwrite(a[0]);"; // объявление real[E]
     char str14[] =
-    "real[*] a, b = new[5], c;\nb[0] = 10;\nwrite(b[0]);"; // РѕР±СЉСЏРІР»РµРЅРёРµ real[*]
+    "real[*] a, b = new[5], c;\nb[0] = 10;\nwrite(b[0]);"; // объявление real[*]
 
     char str15[] =
-    "if(6) {\nwrite(10);\n} \nwrite(100);"; // РїСЂРѕСЃС‚РѕРµ СѓСЃР»РѕРІРёРµ
+    "if(6) {\nwrite(10);\n} \nwrite(100);"; // простое условие
     char str16[] =
     "if(6 < 12) {\nwrite(10);\n} \nelse { \nwrite(10 + 2); \n} \nwrite(100);"; // if-else
     char str17[] =
@@ -30,15 +53,16 @@ int main()
     char str22[] =
     "real[4] a, b, c;\na[0] = 10;\nwrrtweke(a[0]);"; // error
     char str23[] =
-    "real[4] a, b, c;\na(0) = 10;\nwrrtweke(a[0]);"; // Р±РѕР»РµРµ СЃР»РѕР¶РЅС‹Рµ РѕС€РёР±РєРё Р·Р°РІРёСЃСЏС‚ РѕС‚ РїР°СЂС‹ С‚РµСЂРјРёРЅР°Р»-РЅРµС‚РµСЂРјРёРЅР°Р»
+    "real[4] a, b, c;\na(0) = 10;\nwrrtweke(a[0]);"; // более сложные ошибки зависят от пары терминал-нетерминал
 
-    // РїРѕРјРµРЅСЏР№С‚Рµ СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РєР°РєСѓСЋ-Р»РёР±Рѕ РёР· С‚РµСЃС‚РѕРІС‹С… СЃС‚СЂРѕРє, С‡С‚РѕР±С‹ РµРµ РїСЂРѕР°РЅР°Р»РёР·РёСЂРѕРІР°С‚СЊ
+    // поменяйте указатель на какую-либо из тестовых строк, чтобы ее проанализировать
     char* str = str19;
     printf("%s\n", str);
 
     parse(str);
     printf("\n\n");
     VariableTable_print();
+    free(buffer);
     return 0;
 }
 
