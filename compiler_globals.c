@@ -4,7 +4,7 @@ enum ERR_CODES err_no = 0;
 int line_no = 1; int char_no = 0;
 
 int n; double x, d; char *name;
-char _out_st; int _out_tk_no;
+char _out_st; int _out_tk_no; int last_lexeme_start_no;
 int _error_lexeme;
 
 # define KWRD_AMOUNT 14

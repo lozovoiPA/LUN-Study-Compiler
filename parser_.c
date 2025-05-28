@@ -42,6 +42,8 @@ char test_ops[4096];
 char* write_to;
 
 struct List* ops = NULL; // ОПС в виде списка
+struct List* ops_char_no = NULL;
+
 int open_table_type = 0; // Тип объявляемых переменных (см. else в use_action())
 struct Stack* labels_ops = NULL; // стек меток
 struct Stack* labels_test_ops = NULL; // стек меток для тестовой ОПС (выводится в консоль в виде строки)
@@ -55,6 +57,7 @@ OpsItem* parse(char* str){
 
     int res;
     for(int i = 0; (i < str_len) && !err_no;){
+        last_lexeme_start_no = char_no;
         i = tokenizer(str, i); // Получить лексему
         if(!err_no){
             if(_out_tk_no == 2 || _out_tk_no == 1){
@@ -64,14 +67,45 @@ OpsItem* parse(char* str){
         }
     }
     if(err_no){
-        printf("\nERR %d at line %d: ", err_no, line_no);
-        err_codes_resolver();
-    } else{
-        //printf("\n\n%s", test_ops);
-        PrintList(*ops);
+        return NULL;
     }
-    //VariableTable_print();
+    OpsItem* ops_arr = malloc(sizeof(OpsItem) * (ops_els+1));
+    struct List* ops_copy = ops;
+    struct List* ops_char_no_copy = ops_char_no;
+    for(int i = 0; i < ops_els; i++){
+        ops_arr[i].value = ops_copy->tdata.data;
+        ops_arr[i].type = ops_copy->tdata.type;
+        ops_arr[i].line_no = ops_char_no_copy->tdata.type;
+        ops_arr[i].char_no = *(int*)ops_char_no_copy->tdata.data;
+
+        ops_copy = ops_copy->next;
+        ops_char_no_copy = ops_char_no_copy->next;
+
+            printf("L:%3d,C:%3d ", ops_arr[i].line_no, ops_arr[i].char_no);
+            if(ops_arr[i].type >= 5){
+                if(ops_arr[i].type == 5){
+                    printf("(%g, %d)\n", *(double*)ops_arr[i].value, ops_arr[i].type);
+                }
+                else{
+                    printf("(%d, %d)\n", *(int*)ops_arr[i].value, ops_arr[i].type);
+                }
+
+            }
+            else if(ops_arr[i].type >= 1){
+                printf("(%p, %d)\n", ops_arr[i].value, ops_arr[i].type);
+            }
+            else if(ops_arr[i].type == 0){
+                printf("(%s, %d)\n", oper_no_resolver(*(int*)ops_arr[i].value), ops_arr[i].type);
+            }
+            else{
+                printf("( )\n");
+            }
+    }
+    ops_arr[ops_els].value = NULL;
+    ops_arr[ops_els].type = -1;
+
     parser_dispose();
+    return ops_arr;
 }
 
 void use_rule_print(int lx_no){
@@ -162,6 +196,15 @@ int use_rule(int lx_no){
     }
 }
 
+
+void append_lexeme_pos(){
+    struct TypedData td;
+    td.data = malloc(sizeof(int));
+    *(int*)td.data = last_lexeme_start_no;
+    td.type = line_no;
+    ListAppend(ops_char_no, td);
+}
+
 int use_action(struct TypedData tdata){
     if(tdata.type == 1){ // Действие - внести ссылку в ОПС. Необходимо найти ее по имени переменной
         struct TypedData tdata = Pop(variables);
@@ -184,9 +227,7 @@ int use_action(struct TypedData tdata){
         td.data = v->address;
         td.type = v->type;
         ListAppend(ops, td);
-        //printf("%d\n", (int)(v->address));
-
-        //QueuePush(ops, td);
+        append_lexeme_pos();
 
         ops_els++;
         return 1;
@@ -218,7 +259,7 @@ int use_action(struct TypedData tdata){
 
         }
         ListAppend(ops, td);
-
+        append_lexeme_pos();
 
         ops_els++;
         return 1;
@@ -231,6 +272,8 @@ int use_action(struct TypedData tdata){
         *(int*)td.data = *(int*)tdata.data;
         td.type = 0;
         ListAppend(ops, td);
+        append_lexeme_pos();
+
         ops_els++;
         return 1;
     }
@@ -341,6 +384,7 @@ int use_action(struct TypedData tdata){
                     *(int*)ops_el.data = -1;
                     ops_el.type = -1;
                     ListAppend(ops, ops_el);
+                    append_lexeme_pos();
 
                     //ops_els++;
 
@@ -351,6 +395,7 @@ int use_action(struct TypedData tdata){
                     *(int*)ops_el.data = oper_resolver("jf");
                     ops_el.type = 0;
                     ListAppend(ops, ops_el);
+                    append_lexeme_pos();
 
                     ops_els+=2;
                     //printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
@@ -396,6 +441,7 @@ int use_action(struct TypedData tdata){
                     *(int*)ops_el.data = -1;
                     ops_el.type = -1;
                     ListAppend(ops, ops_el);
+                    append_lexeme_pos();
 
                     // Добавление в ОПС jf
                     write_to += sprintf(write_to, "jf ") * sizeof(char);
@@ -404,6 +450,7 @@ int use_action(struct TypedData tdata){
                     *(int*)ops_el.data = oper_resolver("jf");
                     ops_el.type = 0;
                     ListAppend(ops, ops_el);
+                    append_lexeme_pos();
 
                     ops_els+=2;
                 }
@@ -469,6 +516,7 @@ int use_action(struct TypedData tdata){
                     *(int*)ops_el.data = *(int*)td.data;
                     ops_el.type = 6;
                     ListAppend(ops, ops_el);
+                    append_lexeme_pos();
 
                     // Добавление в ОПС j
                     write_to += sprintf(write_to, "j ") * sizeof(char);
@@ -477,6 +525,7 @@ int use_action(struct TypedData tdata){
                     *(int*)ops_el.data = oper_resolver("j");
                     ops_el.type = 0;
                     ListAppend(ops, ops_el);
+                    append_lexeme_pos();
 
                     ops_els+=2;
                 }
@@ -504,6 +553,8 @@ void parser_init(){
 
     variables = NewStack();
     ops = NewList();
+    ops_char_no = NewList();
+
     labels_ops = NewStack();
     labels_test_ops = NewStack();
 
@@ -967,6 +1018,7 @@ void parser_dispose(){
     StackDispose(act_magazine);
     StackDispose(variables);
     ListDispose(ops);
+    ListDispose(ops_char_no);
     StackDispose(labels_ops);
     StackDispose(labels_test_ops);
     tokenizer_dispose();

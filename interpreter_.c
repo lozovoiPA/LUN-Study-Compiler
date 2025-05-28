@@ -13,32 +13,19 @@ const double eps = 1e-9;
 
 //ћакросы определ€ют размеры стека и области пам€ти.
 
-typedef struct {
-    int value;
-    int type; 
-    // 0 - операци€
-    // 1 - ссылка на статический массив
-    // 2 - ссылка на динамический массив
-    // 3 - ссылка на переменную real
-    // 5 - константа real
-    // 6 - константа integer
-} OpsStackItem;
-
-int memory[MEM_SIZE]; // ѕам€ть интерпретатора
-OpsStackItem stack[STACK_SIZE]; // —тек
+OpsItem stack[STACK_SIZE]; // —тек
 int sp = -1;  // ”казатель вершины стека
 
 //кладет элемент в стек.
-void push(int value, int type) {
+void push(OpsItem item) {
     if (sp >= STACK_SIZE - 1) {
-        printf("ќшибка: стек переполнен\n");
-        //exit(1);
+        err_no = ERR_STACK_OVERFLOW;
     }
-    stack[++sp] = (OpsStackItem){value, type};
+    stack[++sp] = item;
 }
 
 //извлекает элемент из стека.
-OpsStackItem pop() {
+OpsItem pop() {
     if (sp < 0) {
         printf("ќшибка: стек пуст\n");
         exit(1);
@@ -106,12 +93,14 @@ double taylor_sqrt(double x) {
 }
 
 //возвращает реальное значение (если ссылка Ч берет из memory, иначе возвращает значение напр€мую).
-double resolve(OpsStackItem s) {
+double resolve(OpsItem s) {
     switch (s.type) {
         case 1: case 2: case 3:
-            return memory[s.value];
+            //return memory[s.value];
+            return 0;
         case 5: case 6:
-            return s.value;
+            //return s.value;
+            return 0;
         default:
             printf("ќшибка: недопустимый тип дл€ resolve: %d\n", s.type);
             exit(1);
@@ -119,7 +108,7 @@ double resolve(OpsStackItem s) {
 }
 //выполн€ет одну из операций, в зависимости от кода op
 void exec_op(int op, int *pc, OpsItem *ops) {
-    OpsStackItem a, b;
+    OpsItem a, b;
     switch (op) {
         case 2: // =
             b = pop();
@@ -128,7 +117,7 @@ void exec_op(int op, int *pc, OpsItem *ops) {
                 printf("ќшибка: присваивание требует ссылку\n");
                 exit(1);
             }
-            memory[a.value] = resolve(b);
+            //memory[a.value] = resolve(b);
             break;
         case 3: // read
             a = pop();
@@ -137,7 +126,7 @@ void exec_op(int op, int *pc, OpsItem *ops) {
                 exit(1);
             }
             printf("¬ведите значение дл€ переменной: ");
-            scanf("%d", &memory[a.value]);
+            //scanf("%d", &memory[a.value]);
             break;
         case 4: // write
             a = pop();
@@ -160,21 +149,21 @@ void exec_op(int op, int *pc, OpsItem *ops) {
                 exit(1);
             }
 
-            push(a.value + (int)index_val, 1); // считаем адрес и возвращаем ссылку
+            //push(a.value + (int)index_val, 1); // считаем адрес и возвращаем ссылку
             break;
         case 6: // +
             b = pop(); a = pop();
-            push(resolve(a) + resolve(b), 5); // предполагаем, что результат Ч real
+            //push(resolve(a) + resolve(b), 5); // предполагаем, что результат Ч real
             break;
 
         case 7: // -
             b = pop(); a = pop();
-            push(resolve(a) - resolve(b), 5);
+            //push(resolve(a) - resolve(b), 5);
             break;
 
         case 8: // *
             b = pop(); a = pop();
-            push(resolve(a) * resolve(b), 5);
+            //push(resolve(a) * resolve(b), 5);
             break;
 
         case 9: // /
@@ -183,12 +172,12 @@ void exec_op(int op, int *pc, OpsItem *ops) {
                 printf("ќшибка: деление на ноль\n");
                 exit(1);
             }
-            push(resolve(a) / resolve(b), 5);
+            //push(resolve(a) / resolve(b), 5);
             break;
 
         case 10: // унарный минус
             a = pop();
-            push(-resolve(a), a.type);
+            //push(-resolve(a), a.type);
             break;
         case 11: // sqrt
             a = pop();
@@ -196,12 +185,12 @@ void exec_op(int op, int *pc, OpsItem *ops) {
                 printf("ќшибка: sqrt от отрицательного числа\n");
                 exit(1);
             }
-            push(taylor_sqrt(resolve(a)), 5); // возвращаем real
+            //push(taylor_sqrt(resolve(a)), 5); // возвращаем real
             break;
 
         case 12: // exp
             a = pop();
-            push(taylor_exp(resolve(a)), 5);
+            //push(taylor_exp(resolve(a)), 5);
             break;
 
         case 13: // log_b(a)
@@ -211,12 +200,12 @@ void exec_op(int op, int *pc, OpsItem *ops) {
                 printf("ќшибка: некорректные аргументы дл€ log_b(a): a=%f, b=%f\n", resolve(a), resolve(b));
                 exit(1);
             }
-            push(taylor_ln(resolve(a)) / taylor_ln(resolve(b)), 5);
+            //push(taylor_ln(resolve(a)) / taylor_ln(resolve(b)), 5);
             break;
 
         case 18: // >=
             b = pop(); a = pop();
-            push(resolve(a) >= resolve(b), 6); // логическое значение Ч целое
+            //push(resolve(a) >= resolve(b), 6); // логическое значение Ч целое
             break;
         case 20: // jf
             a = pop();
@@ -233,17 +222,26 @@ void exec_op(int op, int *pc, OpsItem *ops) {
     }
 }
 
+void err_print(){
+    printf("\nERR %d at line %d: ", err_no, line_no);
+    err_codes_resolver();
+}
+
 void interpret(char *program) {
     OpsItem * ops = parse(program);
+    if(ops == NULL){
+        err_print();
+        return;
+    }
 
-    // ѕредположим, parse возвращает массив и в конце маркер с типом -1
+    // parse возвращает массив и в конце маркер с типом -1
     int pc = 0;
     while (ops[pc].type != -1) {
         OpsItem item = ops[pc];
         if (item.type >= 1 && item.type <= 6) {
-            push(item.value, item.type);
+            push(item);
         } else if (item.type == 0) { // операци€
-            exec_op(item.value, &pc, ops);
+            exec_op(*(int*)item.value, &pc, ops);
         }
         pc++;
     }

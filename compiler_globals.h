@@ -21,14 +21,16 @@ enum ERR_CODES
     ERR_IN_VARIABLES_STACK = 4,
     ERR_INDEX_NOT_INTEGER = 5,
     ERR_LEXEME_EXPECTED = 6,
-    ERR_UNKNOWN_LEXEME = 7
+    ERR_UNKNOWN_LEXEME = 7,
+    ERR_STACK_OVERFLOW = 8,
+
 };
 
 // Максимальная длина идентификатора
 #define MAX_ID_LEN 64
 extern enum ERR_CODES err_no;
 // Номера строки и символа в ней
-extern int line_no; extern int char_no;
+extern int line_no; extern int char_no; extern int last_lexeme_start_no;
 
 // Переменные, использующиеся при вычислении чисел/идентификаторов
 extern int n; extern double x, d;
@@ -47,6 +49,13 @@ struct TypedData {
     int type;
 };
 
+typedef struct {
+    void* value;
+    int type;
+    int line_no;
+    int char_no;
+} OpsItem ;
+
 struct List{
     struct TypedData tdata;
     struct List* next;
@@ -56,12 +65,6 @@ struct List{
 struct Stack{
     struct List* top;
 };
-
-// Элемент ОПС
-typedef struct {
-    int type;   // 0 - ссылка на память, 1 - константа, 2 - операция
-    int value;  // значение или код операции
-} OpsItem;
 
 // Функции для работы со структурами данных
 struct List* NewList();
