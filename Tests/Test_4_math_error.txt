@@ -1,0 +1,4 @@
+real a = -1;
+real b = log(a); // Место ошибки
+
+write(b);
