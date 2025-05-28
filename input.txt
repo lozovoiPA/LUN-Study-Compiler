@@ -1,0 +1,42 @@
+real[10] b;
+real[*] c;
+
+c = new[10];
+
+real i = 0;
+
+while (i < 10000){
+ i = i * 10;
+ write(i);
+i = i+1;
+}
+i = 10-i;
+write(i);
+
+i = 0;
+while(i < 10){
+ b[i] = i+log(i+2, exp(1));
+ write(b[i]);
+ i = i+1;
+}
+real d;
+if(b[9] >= 11){
+ d = 34; 
+
+}
+else if(b[4] < 3){
+ d = 0.1234;
+}
+else if(i > 0){
+ d = -129.34;
+}
+write(d);
+write(d + sqrt(250));
+
+i = 1;
+c[0] = 0;
+while(i < 10){
+ c[i] = b[i-1] + c[i-1];
+ i = i+1;
+}
+write(c[9] + b[9]);
