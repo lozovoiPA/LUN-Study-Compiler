@@ -1,0 +1,4 @@
+real a = -1;
+real b = log(a,exp(1));
+
+write(b);

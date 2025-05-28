@@ -1,7 +1,7 @@
 real a = 21;
 real b = 44;
 
-while (if (a < b)) // Место ошибки
+while (if (a < b))
 {
      a = a + 1;
 }

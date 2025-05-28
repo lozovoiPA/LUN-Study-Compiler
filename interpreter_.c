@@ -92,129 +92,605 @@ double taylor_sqrt(double x) {
     return next;
 }
 
-//возвращает реальное значение (если ссылка — берет из memory, иначе возвращает значение напрямую).
-double resolve(OpsItem s) {
-    switch (s.type) {
-        case 1: case 2: case 3:
-            //return memory[s.value];
-            return 0;
-        case 5: case 6:
-            //return s.value;
-            return 0;
-        default:
-            printf("Ошибка: недопустимый тип для resolve: %d\n", s.type);
-            exit(1);
-    }
-}
 //выполняет одну из операций, в зависимости от кода op
 void exec_op(int op, int *pc, OpsItem *ops) {
-    OpsItem a, b;
+    OpsItem a, b, newitem;
+    double ad, bd;
+    int ai, bi;
     switch (op) {
-        case 2: // =
+        case 16: // =
             b = pop();
             a = pop();
-            if (a.type != 0) {
-                printf("Ошибка: присваивание требует ссылку\n");
+            if (a.type <= 1 || a.type > 3) {
+                printf("Ошибка: присваивание требует ссылку");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
                 exit(1);
             }
-            //memory[a.value] = resolve(b);
+
+            if(a.type == 2){ // присвоение памяти динамическому массиву
+                if(b.type != 4){
+                    printf("Ошибка: только область памяти может быть присвоена массиву");
+                    printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                    exit(1);
+                }
+                if(a.value != NULL){
+                    free((void*)(long)(((int*)a.value)[0]));
+                }
+                int size = *(int*)b.value;
+                ((int*)a.value)[0] = (int)(long)malloc(sizeof(double) * size);
+                ((int*)a.value)[1] = sizeof(double);
+                ((int*)a.value)[2] = size;
+
+                double* init = (double*)(long)(((int*)a.value)[0]);
+                for(int i = 0; i < size; i++){
+                    init[i] = 0;
+                }
+
+            }
+            else{
+                if(b.type == 4){
+                    printf("Ошибка: только переменные или константы могут быть присвоены переменной");
+                    printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                    exit(1);
+                }
+                if(b.type == 6){
+                    bd = (double)*(int*)b.value;
+                }
+                else{
+                    bd = *(double*)b.value;
+                }
+                *(double*)a.value = bd;
+            }
+
+
             break;
-        case 3: // read
+        case 25: // read
             a = pop();
-            if (a.type != 0) {
-                printf("Ошибка: read требует ссылку\n");
+            if (a.type != 3) {
+                printf("Ошибка: read требует ссылку на переменную");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
                 exit(1);
             }
             printf("Введите значение для переменной: ");
-            //scanf("%d", &memory[a.value]);
+            scanf("%lf", (double*)a.value);
             break;
-        case 4: // write
+        case 26: // write
             a = pop();
-            printf("%d\n", resolve(a));
+            if (a.type == 1 || a.type == 2 || a.type == 4) {
+                printf("Ошибка: невозможно выполнить write с массивом");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+            if(a.type == 6){
+                ai = *(int*)a.value;
+                printf("%d\n", ai);
+            }
+            else{
+                ad = *(double*)a.value;
+                printf("%g\n", ad);
+            }
+
             break;
-        case 5: // ind (индексация массива)
+        case 36: // ind (индексация массива)
             b = pop(); // индекс
             a = pop(); // массив
 
             // Проверка типа массива
-            if (a.type != 1 && a.type != 2) {
-                printf("Ошибка: индексация возможна только для массивов, получено тип %d\n", a.type);
+            if (a.type >= 3) {
+                printf("Ошибка: индексация возможна только для массивов");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
                 exit(1);
             }
+            // Проверка, что динамический массив инициализирован
+            if (a.type == 2 && a.value == NULL) {
+                printf("Ошибка: массив не инициализирован");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+            // Проверка, что индекс — целое число
+            if(b.type <= 2 || b.type == 4){
+                printf("Ошибка: индекс должен быть целым числом");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            bi = floor(bd);
+            if(bd - bi != 0){
+                printf("Ошибка: индекс должен быть целым числом");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+            // Проверка, что не происходит выхода за границу массива
+            if(bi >= ((int*)a.value)[2] || bi < 0){
+                printf("Ошибка: индекс за границей массива");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = ((int*)a.value)[1] * (bi) + ((int*)a.value)[0];
+            newitem.type = 3;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+            break;
+        case 3: // +
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(double));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            *(double*)newitem.value = ad + bd;
+            newitem.type = 5;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+
+        case 4: // -
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(double));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            *(double*)newitem.value = ad - bd;
+            newitem.type = 5;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+            break;
+
+        case 5: // *
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(double));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            *(double*)newitem.value = ad * bd;
+            newitem.type = 5;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+
+        case 6: // /
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(double));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            if (bd == 0) {
+                printf("Ошибка: деление на ноль");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+            *(double*)newitem.value = ad / bd;
+            newitem.type = 5;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+
+        case 33: // унарный минус
+            a = pop();
+            // Проверка что a - переменная или константа
+            if(a.type < 3 || a.type == 4){
+                printf("Ошибка: операнд должен быть переменной или константой");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(double));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            *(double*)newitem.value = -ad;
+            newitem.type = 5;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+        case 27: // sqrt
+            a = pop();
+            // Проверка что a - переменная или константа
+            if(a.type < 3 || a.type == 4){
+                printf("Ошибка: операнд должен быть переменной или константой");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(double));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if (ad < 0) {
+                printf("Ошибка: sqrt от отрицательного числа");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+            *(double*)newitem.value = taylor_sqrt(ad);
+            newitem.type = 5;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+            break;
+
+        case 28: // exp
+            a = pop();
+            // Проверка что a - переменная или константа
+            if(a.type < 3 || a.type == 4){
+                printf("Ошибка: операнд должен быть переменной или константой");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(double));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            *(double*)newitem.value = taylor_exp(ad);
+            newitem.type = 5;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+
+        case 29: // log_b(a)
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(double));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            if (ad <= 0 || bd <= 0 || bd == 1.0) {
+                printf("Ошибка: некорректные аргументы для log_b(a)");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+            *(double*)newitem.value = taylor_ln(ad) / taylor_ln(bd);
+            newitem.type = 5;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+
+        case 21: // >=
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf("в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(int));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            *(int*)newitem.value = (ad >= bd);
+            newitem.type = 6;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+
+        case 17: // <
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf("в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(int));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            *(int*)newitem.value = (ad < bd);
+            newitem.type = 6;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+
+        case 18: // >
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf("в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(int));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            *(int*)newitem.value = (ad > bd);
+            newitem.type = 6;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+        case 19: // ==
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf("в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(int));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            *(int*)newitem.value = (ad == bd);
+            newitem.type = 6;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+
+        case 20: // <=
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf("в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(int));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            *(int*)newitem.value = (ad <= bd);
+            newitem.type = 6;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+        case 22: // !=
+            b = pop(); a = pop();
+            // Проверка что a и b - переменные или константы
+            if(a.type < 3 || b.type < 3 || a.type == 4 || b.type == 4){
+                printf("Ошибка: операнды должны быть переменными или константами");
+                printf("в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            newitem.value = malloc(sizeof(int));
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            if(b.type == 6){
+                bd = (double)*(int*)b.value;
+            }
+            else{
+                bd = *(double*)b.value;
+            }
+            *(int*)newitem.value = (ad != bd);
+            newitem.type = 6;
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
+
+            break;
+        case 35: // jf
+            b = pop(); a = pop();
+            // Проверка, что b - целочисленная константа (метка перехода), a - переменная или константа
+            if(b.type != 6 || a.type < 3 || a.type == 4){
+                printf("Ошибка в интерпретации перехода");
+                printf("в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            bi = *(int*)b.value;
+            if (ad == 0){
+                *pc = bi - 1;
+            }
+            break;
+
+        case 34: // j
+            a = pop();
+            // Проверка, что a - целочисленная константа (метка перехода)
+            if(a.type != 6){
+                printf("Ошибка в интерпретации перехода");
+                printf("в строке %d, символ %d\n", a.line_no, a.char_no);
+                exit(1);
+            }
+
+            ai = *(int*)a.value;
+            *pc = ai - 1;
+            break;
+
+        case 31: // new
+            a = pop();
 
             // Проверка, что индекс — целое число
-            double index_val = resolve(b);
-            if (floor(index_val) != index_val) {
-                printf("Ошибка: индекс должен быть целым числом, получено %f\n", index_val);
+            if(a.type !=6 && a.type != 3){
+                printf("Ошибка: индекс должен быть целым числом");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
                 exit(1);
             }
-
-            //push(a.value + (int)index_val, 1); // считаем адрес и возвращаем ссылку
-            break;
-        case 6: // +
-            b = pop(); a = pop();
-            //push(resolve(a) + resolve(b), 5); // предполагаем, что результат — real
-            break;
-
-        case 7: // -
-            b = pop(); a = pop();
-            //push(resolve(a) - resolve(b), 5);
-            break;
-
-        case 8: // *
-            b = pop(); a = pop();
-            //push(resolve(a) * resolve(b), 5);
-            break;
-
-        case 9: // /
-            b = pop(); a = pop();
-            if (resolve(b) == 0) {
-                printf("Ошибка: деление на ноль\n");
+            if(a.type == 6){
+                ad = (double)*(int*)a.value;
+            }
+            else{
+                ad = *(double*)a.value;
+            }
+            ai = floor(ad);
+            if(ad - ai != 0){
+                printf("Ошибка: индекс должен быть целым числом");
+                printf(" в строке %d, символ %d\n", a.line_no, a.char_no);
                 exit(1);
             }
-            //push(resolve(a) / resolve(b), 5);
-            break;
+            newitem.value = malloc(sizeof(int));
+            *(int*)newitem.value = ai;
+            newitem.type = 4; // - память
+            newitem.line_no = a.line_no;
+            newitem.char_no = a.char_no;
+            push(newitem);
 
-        case 10: // унарный минус
-            a = pop();
-            //push(-resolve(a), a.type);
-            break;
-        case 11: // sqrt
-            a = pop();
-            if (resolve(a) < 0) {
-                printf("Ошибка: sqrt от отрицательного числа\n");
-                exit(1);
-            }
-            //push(taylor_sqrt(resolve(a)), 5); // возвращаем real
-            break;
-
-        case 12: // exp
-            a = pop();
-            //push(taylor_exp(resolve(a)), 5);
-            break;
-
-        case 13: // log_b(a)
-            b = pop(); // основание
-            a = pop(); // аргумент
-            if (resolve(a) <= 0 || resolve(b) <= 0 || resolve(b) == 1.0) {
-                printf("Ошибка: некорректные аргументы для log_b(a): a=%f, b=%f\n", resolve(a), resolve(b));
-                exit(1);
-            }
-            //push(taylor_ln(resolve(a)) / taylor_ln(resolve(b)), 5);
-            break;
-
-        case 18: // >=
-            b = pop(); a = pop();
-            //push(resolve(a) >= resolve(b), 6); // логическое значение — целое
-            break;
-        case 20: // jf
-            a = pop();
-            if (!resolve(a)) *pc = ops[*pc + 1].value - 1;
-            (*pc)++; // пропустить адрес
-            break;
-        case 21: // j
-            *pc = ops[*pc + 1].value - 1;
-            (*pc)++; // пропустить адрес
             break;
         default:
             printf("Неизвестная операция: %d\n", op);
@@ -223,7 +699,7 @@ void exec_op(int op, int *pc, OpsItem *ops) {
 }
 
 void err_print(){
-    printf("\nERR %d at line %d: ", err_no, line_no);
+    printf("\nERR %d at line %d char %d: ", err_no, line_no, char_no-_lexeme_length);
     err_codes_resolver();
 }
 

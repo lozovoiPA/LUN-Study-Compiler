@@ -1,4 +1,4 @@
 real a, b; 
-a = new[10]; // Место ошибки
+a = new[10];
 
 write(a);

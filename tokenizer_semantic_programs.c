@@ -22,6 +22,7 @@ void pr_name_init(char c) {
 
     name[0] = c;
     name[1] = '\0';
+    _lexeme_length = 1;
 }
 
 void pr_name_add(char c) {
@@ -33,6 +34,7 @@ void pr_name_add(char c) {
     }
     name[len] = c;
     name[len + 1] = '\0';
+    _lexeme_length += 1;
 }
 
 void pr_name_end(char c){
@@ -41,10 +43,12 @@ void pr_name_end(char c){
 
 void pr_n_init(char c) {
     n = c - '0';
+    _lexeme_length = 1;
 }
 
 void pr_n_add(char c) {
     n = n * 10 + (c - '0');
+    _lexeme_length += 1;
 }
 
 void pr_n_end(char c){
@@ -54,55 +58,67 @@ void pr_n_end(char c){
 void pr_real_init(char c) {
     d = 1.0;
     x = n;
+    _lexeme_length += 1;
 }
 
 void pr_real_add(char c) {
     d *= 0.1;
     x += (c - '0') * d;
+    _lexeme_length += 1;
 }
 
 void pr_op_plus(char c) {
+    _lexeme_length = 1;
     _out_tk_no = 3;
 }
 
 void pr_op_minus(char c) {
+    _lexeme_length = 1;
     _out_tk_no = 4;
 }
 
 void pr_op_mul(char c) {
+    _lexeme_length = 1;
     _out_tk_no = 5;
 }
 
 void pr_op_div(char c) {
+    _lexeme_length = 1;
     _out_tk_no = 6;
 }
 
 void pr_br_lsquare(char c) {
+    _lexeme_length = 1;
     _out_tk_no = 7;
 }
 
 void pr_br_rsquare(char c) {
+    _lexeme_length = 1;
     _out_tk_no = 8;
 }
 
 void pr_br_lparen(char c) {
+    _lexeme_length = 1;
     _out_tk_no = 9;
 }
 
 void pr_br_rparen(char c) {
+    _lexeme_length = 1;
     _out_tk_no = 10;
 }
 
 void pr_br_lcurly(char c) {
+    _lexeme_length = 1;
     _out_tk_no = 11;
 }
 
 void pr_br_rcurly(char c) {
+    _lexeme_length = 1;
     _out_tk_no = 12;
 }
 
 void pr_do_nothing(char c) {
-    // ничего не делаем
+    //_lexeme_length = 0;
 }
 
 void pr_change_line(char c){
@@ -112,14 +128,17 @@ void pr_change_line(char c){
 
 void pr_comp_end_single(char c){
     if(name[0] == '='){
+        _lexeme_length = 1;
         _out_tk_no = 16;
         return;
     }
     if(name[0] == '<'){
+        _lexeme_length = 1;
         _out_tk_no = 17;
         return;
     }
     if(name[0] == '>'){
+        _lexeme_length = 1;
         _out_tk_no = 18;
         return;
     }
@@ -130,18 +149,22 @@ void pr_comp_end_single(char c){
 void pr_comp_end_compound(char c){
     pr_name_add(c);
     if(!strcmp(name, "==")){
+        _lexeme_length = 2;
         _out_tk_no = 19;
         return;
     }
     if(!strcmp(name, "<=")){
+        _lexeme_length = 2;
         _out_tk_no = 20;
         return;
     }
     if(!strcmp(name, ">=")){
+        _lexeme_length = 2;
         _out_tk_no = 21;
         return;
     }
     if(!strcmp(name, "!=")){
+        _lexeme_length = 2;
         _out_tk_no = 22;
         return;
     }
@@ -150,14 +173,17 @@ void pr_comp_end_compound(char c){
 }
 
 void pr_comma(char c){
+    _lexeme_length = 1;
     _out_tk_no = 13;
 }
 
 void pr_line_terminal(char c){
+    _lexeme_length = 0;
     _out_tk_no = 14;
 }
 
 void pr_program_end(char c){
+    _lexeme_length = 0;
     _out_tk_no = 15;
 }
 

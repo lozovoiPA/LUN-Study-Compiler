@@ -1,4 +1,4 @@
 real a = 100;
-reaffff b = log(a); // Место ошибки
+reaffff b = log(a);
 
 write(b);

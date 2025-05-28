@@ -46,7 +46,9 @@ struct List* ops_char_no = NULL;
 
 int open_table_type = 0; // Тип объявляемых переменных (см. else в use_action())
 struct Stack* labels_ops = NULL; // стек меток
+struct Stack* labels_ops2 = NULL; // стек меток
 struct Stack* labels_test_ops = NULL; // стек меток для тестовой ОПС (выводится в консоль в виде строки)
+struct Stack* labels_test_ops2 = NULL; // стек меток для тестовой ОПС (выводится в консоль в виде строки)
 int ops_els = 0; // Число элементов ОПС
 
 OpsItem* parse(char* str){
@@ -57,8 +59,8 @@ OpsItem* parse(char* str){
 
     int res;
     for(int i = 0; (i < str_len) && !err_no;){
-        last_lexeme_start_no = char_no;
         i = tokenizer(str, i); // Получить лексему
+
         if(!err_no){
             if(_out_tk_no == 2 || _out_tk_no == 1){
                 push_variable(); // Запомнить имя переменой или значение константы
@@ -81,6 +83,7 @@ OpsItem* parse(char* str){
         ops_copy = ops_copy->next;
         ops_char_no_copy = ops_char_no_copy->next;
 
+        /*
             printf("L:%3d,C:%3d ", ops_arr[i].line_no, ops_arr[i].char_no);
             if(ops_arr[i].type >= 5){
                 if(ops_arr[i].type == 5){
@@ -95,15 +98,16 @@ OpsItem* parse(char* str){
                 printf("(%p, %d)\n", ops_arr[i].value, ops_arr[i].type);
             }
             else if(ops_arr[i].type == 0){
-                printf("(%s, %d)\n", oper_no_resolver(*(int*)ops_arr[i].value), ops_arr[i].type);
+                printf("(%d %s, %d)\n", *(int*)ops_arr[i].value, oper_no_resolver(*(int*)ops_arr[i].value), ops_arr[i].type);
             }
             else{
                 printf("( )\n");
-            }
+            }*/
     }
     ops_arr[ops_els].value = NULL;
     ops_arr[ops_els].type = -1;
 
+    printf("%s\n\n", test_ops);
     parser_dispose();
     return ops_arr;
 }
@@ -121,7 +125,7 @@ void use_rule_print(int lx_no){
 // Она же проверяет на ошибки.
 int use_rule(int lx_no){
     // Выводы для тестов
-    use_rule_print(lx_no);
+    //use_rule_print(lx_no);
 
     // Берем символ из магазина
     struct TypedData tdata = Pop(magazine);
@@ -138,8 +142,8 @@ int use_rule(int lx_no){
     }
     free(act_tdata.data);
 
-    printf("  |  %s", test_ops);
-    printf("\n\n");
+    //printf("  |  %s", test_ops);
+    //printf("\n\n");
     if(tdata.type == 0){ // Лексема
         if(dt != lx_no){
             err_no = ERR_LEXEME_EXPECTED;
@@ -200,7 +204,8 @@ int use_rule(int lx_no){
 void append_lexeme_pos(){
     struct TypedData td;
     td.data = malloc(sizeof(int));
-    *(int*)td.data = last_lexeme_start_no;
+    *(int*)td.data = char_no - _lexeme_length - 1;
+    //printf("%d %d\n", char_no, _lexeme_length);
     td.type = line_no;
     ListAppend(ops_char_no, td);
 }
@@ -318,6 +323,10 @@ int use_action(struct TypedData tdata){
                                 (((int*)v->address)[0]) = (int)malloc(sizeof(double) * size);
                                 (((int*)v->address)[1]) = sizeof(double);
                                 (((int*)v->address)[2]) = size;
+                                double* init = (double*)(long)(((int*)v->address)[0]);
+                                for(int i = 0; i < size; i++){
+                                    init[i] = 0;
+                                }
                                 Push(variables, td);
                             }
                         break;
@@ -340,6 +349,7 @@ int use_action(struct TypedData tdata){
                                 return 0;
                             }
                             v->address = malloc(sizeof(double));
+                            *(double*)v->address = 0;
                         break;
                     }
                     if (!VariableTable_add(v->name, v->address, open_table_type)){
@@ -398,7 +408,6 @@ int use_action(struct TypedData tdata){
                     append_lexeme_pos();
 
                     ops_els+=2;
-                    //printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
                 }
             break;
             case 11:
@@ -530,6 +539,77 @@ int use_action(struct TypedData tdata){
                     ops_els+=2;
                 }
             break;
+            case 15:
+                {
+                    // Добавление метки в стек
+                    struct TypedData tdata;
+                    //tdata.data = malloc(sizeof(void*));
+                    tdata.data = write_to;
+                    tdata.type = 0;
+                    Push(labels_test_ops2, tdata);
+
+                    struct TypedData td;
+                    td.data = malloc(sizeof(int));
+                    *(int*)td.data = ops_els;
+                    td.type = 0;
+                    Push(labels_ops2, td);
+
+                    // Добавление в ОПС пустого символа
+                    write_to += sprintf(write_to, "     ") * sizeof(char);
+                    //=====
+                    struct TypedData ops_el;
+                    ops_el.data = malloc(sizeof(int));
+                    *(int*)ops_el.data = -1;
+                    ops_el.type = -1;
+                    ListAppend(ops, ops_el);
+                    append_lexeme_pos();
+
+                    // Добавление в ОПС j
+                    write_to += sprintf(write_to, "j ") * sizeof(char);
+                    //=====
+                    ops_el.data = malloc(sizeof(int));
+                    *(int*)ops_el.data = oper_resolver("j");
+                    ops_el.type = 0;
+                    ListAppend(ops, ops_el);
+                    append_lexeme_pos();
+
+                    ops_els+=2;
+                }
+            break;
+            case 16:
+                {
+                    // Запись значения в пустой элемент по метке
+
+                    while(!IsEmpty(*labels_test_ops2->top)){
+                        struct TypedData tdata = Pop(labels_test_ops2);
+                        struct TypedData td = Pop(labels_ops2);
+
+                        int len = sprintf((char*)tdata.data, "%d", ops_els);
+                        *((char*)tdata.data + sizeof(char)*len) = ' ';
+                        //=====
+                        struct TypedData* ops_elt = ListGetItem(ops, *(int*)td.data);
+                        if(ops_elt != NULL){
+                            *(int*)ops_elt->data = ops_els;
+                            ops_elt->type = 6;
+                        }
+                    }
+
+                    if(!IsEmpty(*labels_test_ops->top)){
+                        //printf("%p=========%p", labels_test_ops->top->tdata.data, write_to);
+                        struct TypedData tdata = Pop(labels_test_ops);
+                        struct TypedData td = Pop(labels_ops);
+                        int len = sprintf((char*)tdata.data, "%d", ops_els);
+                        *((char*)tdata.data + sizeof(char)*len) = ' ';
+                        //=====
+                        struct TypedData* ops_elt = ListGetItem(ops, *(int*)td.data);
+                        if(ops_elt != NULL){
+                            *(int*)ops_elt->data = ops_els;
+                            ops_elt->type = 6;
+                        }
+                    }
+                }
+            break;
+
         }
         return 1;
     }
@@ -556,7 +636,9 @@ void parser_init(){
     ops_char_no = NewList();
 
     labels_ops = NewStack();
+    labels_ops2 = NewStack();
     labels_test_ops = NewStack();
+    labels_test_ops2 = NewStack();
 
     lambda = NewList();
     struct List* assign = NULL;
@@ -595,7 +677,7 @@ void parser_init(){
         }
         {
             char* rule[] = {"if", "\\C", "{", "\\P", "}", "\\X", "\\Z", "\\P", "\0"};
-            char* act[] = {"0", "0", "10", "0", "0", "0", "12", "0"};
+            char* act[] = {"0", "0", "10", "0", "15", "0", "16", "0"};
             fill_gen(ind1, rule, act);
         }
         {
@@ -680,6 +762,20 @@ void parser_init(){
             fill_gen(ind1, rule, act);
             fill_gen(parser_nt_resolver('O',1), rule, act);
         }
+        {
+            char* rule[] = {"+", "\\G1", "\\V", "\\U", "\0"};
+            char* act[] = {"0", "0", "0", "0"};
+            fill_gen(ind1, rule, act);
+            fill_gen(parser_nt_resolver('O',1), rule, act);
+            fill_gen(parser_nt_resolver('E',0), rule, act);
+        }
+        {
+            char* rule[] = {"-", "\\G1", "\\V", "\\U", "\\Z", "\0"};
+            char* act[] = {"0", "0", "0", "0", "unary-"};
+            fill_gen(ind1, rule, act);
+            fill_gen(parser_nt_resolver('O',1), rule, act);
+            fill_gen(parser_nt_resolver('E',0), rule, act);
+        }
     }
     { ind1 = parser_nt_resolver('J',0);
         {
@@ -705,7 +801,7 @@ void parser_init(){
     { ind1 = parser_nt_resolver('R',0);
         {
             char* rule[] = {"if", "\\C", "{", "\\P", "}", "\\X", "\0"};
-            char* act[] = {"13", "0", "11", "0", "0", "0"};
+            char* act[] = {"13", "0", "11", "0", "15", "0"};
             fill_gen(ind1, rule, act);
         }
         {
@@ -755,6 +851,16 @@ void parser_init(){
         {
             char* rule[] = {"log", "(", "\\E", ",", "\\E", ")", "\\V", "\0"};
             char* act[] = {"0", "0", "0", "0", "0", "log", "0"};
+            fill_gen(ind1, rule, act);
+        }
+        {
+            char* rule[] = {"+", "\\G1", "\\V", "\0"};
+            char* act[] = {"0", "0", "0"};
+            fill_gen(ind1, rule, act);
+        }
+        {
+            char* rule[] = {"-", "\\G1", "\\V", "\\Z", "\0"};
+            char* act[] = {"0", "0", "0", "unary-"};
             fill_gen(ind1, rule, act);
         }
     }
@@ -861,6 +967,16 @@ void parser_init(){
             char* act[] = {"0", "0", "0", "0", "0", "log", "0", "0", "1"};
             fill_gen(ind1, rule, act);
         }
+        {
+            char* rule[] = {"+", "\\G1", "\\V", "\\U", "]", "\0"};
+            char* act[] = {"0", "0", "0", "0", "1"};
+            fill_gen(ind1, rule, act);
+        }
+        {
+            char* rule[] = {"-", "\\G1", "\\V", "\\U", "\\Z", "]", "\0"};
+            char* act[] = {"0", "0", "0", "0", "unary-", "1"};
+            fill_gen(ind1, rule, act);
+        }
     }
     { ind1 = parser_nt_resolver('H',0);
         {
@@ -898,6 +1014,16 @@ void parser_init(){
         {
             char* rule[] = {"log", "(", "\\E", ",", "\\E", ")", "\\V", "\\U", "\\Q", "\0"};
             char* act[] = {"0", "0", "0", "0", "0", "log", "0", "0", "0"};
+            fill_gen(ind1, rule, act);
+        }
+        {
+            char* rule[] = {"+", "\\G1", "\\V", "\\U", "\\Q", "\0"};
+            char* act[] = {"0", "0", "0", "0", "0"};
+            fill_gen(ind1, rule, act);
+        }
+        {
+            char* rule[] = {"-", "\\G1", "\\V", "\\U", "\\Z", "\\Q", "\0"};
+            char* act[] = {"0", "0", "0", "0", "unary-", "0"};
             fill_gen(ind1, rule, act);
         }
     }
@@ -1020,7 +1146,9 @@ void parser_dispose(){
     ListDispose(ops);
     ListDispose(ops_char_no);
     StackDispose(labels_ops);
+    StackDispose(labels_ops2);
     StackDispose(labels_test_ops);
+    StackDispose(labels_test_ops2);
     tokenizer_dispose();
 }
 

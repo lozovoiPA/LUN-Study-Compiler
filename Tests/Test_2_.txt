@@ -1,6 +1,6 @@
 real n;
 read(n);
-real[*] array = new [n]; // тут я хочу задать массив длины n, в нашей грамматике это так ведь делается?
+real[*] array = new[n];
 
 real i = 0;
 while (i < n) 
@@ -10,10 +10,10 @@ while (i < n)
 }
 
 
-real is_swapped = 1;
-while (is_swapped == 1) 
+real isswapped = 1;
+while (isswapped == 1) 
 {
-    is_swapped = 0;
+    isswapped = 0;
     i = 0;
     while (i < n - 1) 
     { 
@@ -22,7 +22,7 @@ while (is_swapped == 1)
             real temp = array[i];
             array[i] = array[i + 1]; 
             array[i + 1] = temp; 
-            is_swapped = 1; 
+            isswapped = 1; 
         }
         i = i + 1;
     }

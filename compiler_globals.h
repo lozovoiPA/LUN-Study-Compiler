@@ -30,7 +30,7 @@ enum ERR_CODES
 #define MAX_ID_LEN 64
 extern enum ERR_CODES err_no;
 // Номера строки и символа в ней
-extern int line_no; extern int char_no; extern int last_lexeme_start_no;
+extern int line_no; extern int char_no; extern int _lexeme_length;
 
 // Переменные, использующиеся при вычислении чисел/идентификаторов
 extern int n; extern double x, d;
