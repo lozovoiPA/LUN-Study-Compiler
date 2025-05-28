@@ -1,0 +1,10 @@
+real a = 1;
+real b = 0,3;
+
+real[*] array = new [a + b]; // Место ошибки
+
+real i = 0;
+while (i < n) { 
+    read(array[i]);
+    i = i + 1;
+}
