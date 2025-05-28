@@ -167,30 +167,19 @@ struct Stack* NewStack(){
 
     return stack;
 };
-struct Queue* NewQueue(){
-    struct List* list = NewList();
-    struct Queue* queue = (struct Queue*)malloc(sizeof(struct Queue));
-    queue->front = list;
-
-    return queue;
-}
 
 void ListDispose(struct List* list){
-    void* nextEl;
+    struct List* nextEl;
     while(list->next != NULL){
         nextEl = list->next;
-        free(list->tdata.data);
-        free(list);
+        //free(list->tdata.data);
+        free((struct List*)list);
     }
-    free(nextEl);
+    free((struct List*)nextEl);
 }
 void StackDispose(struct Stack* stack){
     ListDispose(stack->top);
-    free(stack);
-}
-void QueueDispose(struct Queue* queue){
-    ListDispose(queue->front);
-    free(queue);
+    free((struct Stack*)stack);
 }
 
 int IsEmpty(struct List list){
@@ -298,16 +287,3 @@ struct TypedData Pop(struct Stack *stack){
     }
     return RemoveLast(removeAt);
 };
-
-struct Queue* QueuePush(struct Queue* queue, struct TypedData tdata){
-    Append(queue->front, tdata);
-    return queue;
-}
-
-struct TypedData QueuePop(struct Queue* queue){
-    struct List* removeAt = queue->front;
-    if(queue->front->next != NULL){
-        queue->front = queue->front->next;
-    }
-    return RemoveFirst(removeAt);
-}

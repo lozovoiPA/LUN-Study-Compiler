@@ -57,17 +57,17 @@ struct Stack{
     struct List* top;
 };
 
-struct Queue{
-    struct List* front;
-};
+// Ёлемент ќѕ—
+typedef struct {
+    int type;   // 0 - ссылка на пам€ть, 1 - константа, 2 - операци€
+    int value;  // значение или код операции
+} OpsItem;
 
 // ‘ункции дл€ работы со структурами данных
 struct List* NewList();
 struct Stack* NewStack();
-struct Queue* NewQueue();
 void ListDispose(struct List*);
 void StackDispose(struct Stack*);
-void QueueDispose(struct Queue*);
 
 int IsEmpty(struct List);
 struct List* Append(struct List*, struct TypedData);
@@ -79,9 +79,6 @@ void PrintListBackwards(struct List);
 
 struct Stack* Push(struct Stack*, struct TypedData);
 struct TypedData Pop(struct Stack*);
-
-struct Queue* QueuePush(struct Queue*, struct TypedData);
-struct TypedData QueuePop(struct Queue*);
 
 char* IntToString(int num);
 int StringToInt(char* str);

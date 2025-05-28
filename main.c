@@ -1,7 +1,5 @@
 #include "parser_.h"
-#include "compiler_globals.h"
 
-#include "parser_semantic_programs.h"
 int main()
 {
     // тестовые строки
@@ -35,45 +33,10 @@ int main()
     "real[4] a, b, c;\na(0) = 10;\nwrrtweke(a[0]);"; // более сложные ошибки зависят от пары терминал-нетерминал
 
     // поменяйте указатель на какую-либо из тестовых строк, чтобы ее проанализировать
-    char* str = str19;
+    char* str = str23;
     printf("%s\n", str);
-    int str_len = strlen(str)+1;
 
-    /*
-    char test_ops1[4096];
-    char* write_to;
-    write_to = test_ops1;
-    for(int i = 0; i<10; i++){
-        write_to += sprintf(write_to, "%d ", i) * sizeof(char);
-    }
-    printf("%s\n", test_ops1);
-
-    VariableTable_init();
-
-    VariableTable_add("test_ops1", test_ops1, 1);
-    VariableTable_print();
-    printf("\n\n%s", (char*)(VariableTable_find("test_ops1")->address));*/
-
-    /*
-    struct Queue* q = NewQueue();
-    struct TypedData td;
-    for(int i = 0; i < 10; i++){
-        td.data = malloc(sizeof(int));
-        *(int*)td.data = i;
-        td.type = 0;
-        QueuePush(q, td);
-        PrintList(*q->front);
-        printf("\n");
-    }
-    printf("\n============\n");
-    for(int i = 0; i < 10; i++){
-        td = QueuePop(q);
-        printf("%d\n\n", *(int*)td.data);
-        PrintList(*q->front);
-        printf("\n");
-    }*/
-
-    parser(str, str_len);
+    parse(str);
     return 0;
 }
 

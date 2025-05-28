@@ -1,6 +1,8 @@
 #ifndef PARSER__H_INCLUDED
 #define PARSER__H_INCLUDED
 
-void parser(char* str, int str_len);
+#include "compiler_globals.h"
+
+OpsItem* parse(char* str);
 
 #endif // PARSER__H_INCLUDED

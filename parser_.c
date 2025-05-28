@@ -41,16 +41,17 @@ char parser_sts[] = "P  JO XREUTVG MLHCQZ";
 char test_ops[4096];
 char* write_to;
 
-struct Queue* ops = NULL; // ОПС в виде очереди
+struct List* ops = NULL; // ОПС в виде списка
 int open_table_type = 0; // Тип объявляемых переменных (см. else в use_action())
 struct Stack* labels_ops = NULL; // стек меток
 struct Stack* labels_test_ops = NULL; // стек меток для тестовой ОПС (выводится в консоль в виде строки)
 int ops_els = 0; // Число элементов ОПС
 
-void parser(char* str, int str_len){
+OpsItem* parse(char* str){
     parser_init();
     //print_tables();
-    printf("\n");
+
+    int str_len = strlen(str)+1;
 
     struct TypedData tdata;
     int res;
@@ -67,7 +68,8 @@ void parser(char* str, int str_len){
         printf("\nERR %d at line %d: ", err_no, line_no);
         err_codes_resolver();
     } else{
-        printf("\n\n%s", test_ops);
+        //printf("\n\n%s", test_ops);
+
     }
     //VariableTable_print();
     parser_dispose();
@@ -182,7 +184,9 @@ int use_action(struct TypedData tdata){
         struct TypedData td;
         td.data = v->address;
         td.type = v->type;
-        QueuePush(ops, td);
+        //printf("%d\n", (int)(v->address));
+
+        //QueuePush(ops, td);
 
         ops_els++;
         return 1;
@@ -202,7 +206,7 @@ int use_action(struct TypedData tdata){
             td.data = malloc(sizeof(double));
             *(double*)td.data = *(double*)vt->address;
             td.type = vt->type;
-            QueuePush(ops, td);
+            //QueuePush(ops, td);
         }
         else{ // int
             write_to += sprintf(write_to, "%d ", *(int*)vt->address) * sizeof(char);
@@ -211,7 +215,7 @@ int use_action(struct TypedData tdata){
             td.data = malloc(sizeof(int));
             *(int*)td.data = *(int*)vt->address;
             td.type = vt->type;
-            QueuePush(ops, td);
+            //QueuePush(ops, td);
         }
         ops_els++;
         return 1;
@@ -223,7 +227,7 @@ int use_action(struct TypedData tdata){
         td.data = malloc(sizeof(int));
         *(int*)td.data = *(int*)tdata.data;
         td.type = 0;
-        QueuePush(ops, td);
+        //QueuePush(ops, td);
         ops_els++;
         return 1;
     }
@@ -345,9 +349,9 @@ int use_action(struct TypedData tdata){
                     struct TypedData td2 = Pop(labels_ops);
                     int len = sprintf((char*)tdata2.data, "%d", *(int*)td.data);
                     *((char*)tdata2.data + sizeof(char)*len) = ' ';
-                    free(tdata2.data);
+                    //free((char*)tdata2.data); //освобождаем указатель на часть какой-то строки. из-за этого и были ошибки кучи
                     free(td2.data);
-                    free(tdata.data);
+                    //free((char*)tdata.data);
                     free(td.data);
 
                     // Добавление метки в стек
@@ -402,13 +406,13 @@ int use_action(struct TypedData tdata){
                     int len = sprintf((char*)tdata.data, "%d", ops_els+2);
                     *((char*)tdata.data + sizeof(char)*len) = ' ';
 
-                    free(tdata.data);
+                    //free((char*)tdata.data);
                     free(td.data);
                     tdata = Pop(labels_test_ops);
-                    tdata = Pop(labels_ops);
+                    td = Pop(labels_ops);
 
                     // Добавление метки в ОПС
-                    write_to += sprintf(write_to, "%d ", *(int*)tdata.data) * sizeof(char);
+                    write_to += sprintf(write_to, "%d ", *(int*)td.data) * sizeof(char);
 
                     // Добавление в ОПС j
                     write_to += sprintf(write_to, "j ") * sizeof(char);
@@ -437,7 +441,7 @@ void parser_init(){
     Push(act_magazine, tdata);
 
     variables = NewStack();
-    ops = NewQueue();
+    ops = NewList();
     labels_ops = NewStack();
     labels_test_ops = NewStack();
 
@@ -900,7 +904,7 @@ void parser_dispose(){
     StackDispose(magazine);
     StackDispose(act_magazine);
     StackDispose(variables);
-    //QueueDispose(ops);
+    ListDispose(ops);
     StackDispose(labels_ops);
     StackDispose(labels_test_ops);
     tokenizer_dispose();
