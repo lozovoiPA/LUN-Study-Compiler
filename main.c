@@ -1,44 +1,31 @@
 #include "parser_.h"
 #include "parser_semantic_programs.h"
+
+#define MAX_FILE_SIZE 1024 * 1024 // Максимальный размер файла (1 МБ)
+
 int main()
 {
-    // С‚РµСЃС‚РѕРІС‹Рµ СЃС‚СЂРѕРєРё
+    // Открытие файла для чтения
+    FILE *file = fopen("input.txt", "r");
+    if (file == NULL) {
+        perror("Ошибка открытия файла");
+        return EXIT_FAILURE;
+    }
 
-    char str12[] =
-    "real a, b = 12.4 + 1, c = 10;\na = b - c;\nwrite(a);"; // РѕР±СЉСЏРІР»РµРЅРёРµ real
-    char str13[] =
-    "real[4] a, b, c;\na[0] = 10;\nwrite(a[0]);"; // РѕР±СЉСЏРІР»РµРЅРёРµ real[E]
-    char str14[] =
-    "real[*] a, b = new[5], c;\nb[0] = 10;\nwrite(b[0]);"; // РѕР±СЉСЏРІР»РµРЅРёРµ real[*]
+    char *buffer = malloc(MAX_FILE_SIZE);
+    if (buffer == NULL) {
+        perror("Ошибка выделения памяти");
+        fclose(file);
+        return EXIT_FAILURE;
+    }
 
-    char str15[] =
-    "if(6) {\nwrite(10);\n} \nwrite(100);"; // РїСЂРѕСЃС‚РѕРµ СѓСЃР»РѕРІРёРµ
-    char str16[] =
-    "if(6 < 12) {\nwrite(10);\n} \nelse { \nwrite(10 + 2); \n} \nwrite(100);"; // if-else
-    char str17[] =
-    "if(6 < 12 + 343) {\nwrite(10);\n} \nelse if(6 + 3 != 25) { \nwrite(10 + 2); \n} \nwrite(100);"; // if-else if
-    char str18[] =
-    "if(6 < 12 + 343) {\nwrite(10);\n} \nelse if(6 + 3 != 25) { \nwrite(10 + 2); \n} \nelse { \nwrite(10 + 2); \n} \nwrite(100);"; // if-elseif-else
+    size_t bytesRead = fread(buffer, sizeof(char), MAX_FILE_SIZE - 1, file);
+    buffer[bytesRead] = '\0'; // Завершение строки нулевым символом
 
-    char str19[] =
-    "real j = 10;\nwhile(j > 0) {\nwrite(78 - j); \nj = j - 1; \n} \nwrite(j); \ni = 10; "; // while
-
-    char str20[] =
-    "if 10 \n i = 25;"; // error
-    char str21[] =
-    "real[4.5] a, b, c;\na[0] = 10;\nwrite(a[0]);"; // error
-    char str22[] =
-    "real[4] a, b, c;\na[0] = 10;\nwrrtweke(a[0]);"; // error
-    char str23[] =
-    "real[4] a, b, c;\na(0) = 10;\nwrrtweke(a[0]);"; // Р±РѕР»РµРµ СЃР»РѕР¶РЅС‹Рµ РѕС€РёР±РєРё Р·Р°РІРёСЃСЏС‚ РѕС‚ РїР°СЂС‹ С‚РµСЂРјРёРЅР°Р»-РЅРµС‚РµСЂРјРёРЅР°Р»
-
-    // РїРѕРјРµРЅСЏР№С‚Рµ СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РєР°РєСѓСЋ-Р»РёР±Рѕ РёР· С‚РµСЃС‚РѕРІС‹С… СЃС‚СЂРѕРє, С‡С‚РѕР±С‹ РµРµ РїСЂРѕР°РЅР°Р»РёР·РёСЂРѕРІР°С‚СЊ
-    char* str = str19;
-    printf("%s\n", str);
-
-    parse(str);
-    printf("\n\n");
-    VariableTable_print();
+    parse(buffer);
+    // Закрытие файла
+    fclose(file);
+    free(buffer);
     return 0;
 }
 
